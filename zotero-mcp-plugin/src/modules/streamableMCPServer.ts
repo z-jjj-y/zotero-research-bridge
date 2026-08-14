@@ -42,6 +42,13 @@ import {
 } from "./writeHandlers";
 import { serverPreferences, type WriteScope } from "./serverPreferences";
 import { SERVER_INFO_VERSION } from "./httpServer";
+import { applyMutation, planMutation } from "./mutationCoordinator";
+import {
+  isLegacyDirectMutationTool,
+  isMutationOperation,
+  MUTATION_OPERATIONS,
+  MUTATION_SCOPES,
+} from "./mutationOperations";
 
 /**
  * Argument-validation failure raised by individual tool handlers. Mapped to
@@ -2120,11 +2127,66 @@ export class StreamableMCPServer {
       import_attachment_url: ["import"],
     };
 
-    for (const wt of writeTools) {
-      const required = WRITE_TOOL_SCOPES[wt.name] || [];
-      if (required.every(scopeOn)) {
-        tools.push(wt);
-      }
+    const writeToolDescriptions = new Map(
+      writeTools
+        .filter((tool) => isMutationOperation(tool.name))
+        .map((tool) => [tool.name, tool.description]),
+    );
+    const availableOperations = MUTATION_OPERATIONS.filter((operation) => {
+      const required =
+        WRITE_TOOL_SCOPES[operation] || MUTATION_SCOPES[operation];
+      return required.every(scopeOn);
+    });
+    if (availableOperations.length > 0) {
+      tools.push(
+        {
+          name: "plan_mutation",
+          description:
+            "Create a non-writing, time-limited mutation plan. Review the returned summary and preview before applying. Available operations and descriptions: " +
+            availableOperations
+              .map(
+                (operation) =>
+                  `${operation} (${writeToolDescriptions.get(operation) || "Zotero mutation"})`,
+              )
+              .join("; "),
+          inputSchema: {
+            type: "object",
+            properties: {
+              operation: {
+                type: "string",
+                enum: availableOperations,
+                description: "Allowlisted Zotero mutation to plan",
+              },
+              arguments: {
+                type: "object",
+                description:
+                  "Arguments for the selected operation. They are validated and stored server-side; apply_mutation cannot alter them.",
+              },
+            },
+            required: ["operation", "arguments"],
+          },
+        },
+        {
+          name: "apply_mutation",
+          description:
+            "Apply exactly one previously reviewed mutation plan. Plans expire after 10 minutes and can be used only once.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              planId: {
+                type: "string",
+                description: "planId returned by plan_mutation",
+              },
+              confirmationToken: {
+                type: "string",
+                description:
+                  "One-time confirmationToken returned by plan_mutation",
+              },
+            },
+            required: ["planId", "confirmationToken"],
+          },
+        },
+      );
     }
 
     return this.createResponse(request.id ?? null, { tools });
@@ -2136,7 +2198,21 @@ export class StreamableMCPServer {
     try {
       let result;
 
+      if (isLegacyDirectMutationTool(name)) {
+        throw new InvalidParamsError(
+          `Direct mutation tool '${name}' is disabled. Use plan_mutation, review its preview, then call apply_mutation.`,
+        );
+      }
+
       switch (name) {
+        case "plan_mutation":
+          result = await planMutation(args);
+          break;
+
+        case "apply_mutation":
+          result = await applyMutation(args);
+          break;
+
         case "search_library":
           result = await this.callSearchLibrary(args);
           break;

@@ -1,6 +1,7 @@
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import { ClientConfigGenerator } from "./clientConfigGenerator";
+import { BRIDGE_POLICY } from "./bridgePolicy";
 import { bindEmbeddingSettings, bindApiUsageStats } from "./prefEmbedding";
 import { bindSemanticStatsSettings } from "./prefSemanticIndex";
 import { serverPreferences } from "./serverPreferences";
@@ -17,11 +18,11 @@ export async function registerPrefsScripts(_window: Window) {
   // Diagnose current preference state
   try {
     const currentEnabled = Zotero.Prefs.get(
-      "extensions.zotero.zotero-mcp-plugin.mcp.server.enabled",
+      "extensions.zotero.zotero-research-bridge.mcp.server.enabled",
       true,
     );
     const currentPort = Zotero.Prefs.get(
-      "extensions.zotero.zotero-mcp-plugin.mcp.server.port",
+      "extensions.zotero.zotero-research-bridge.mcp.server.port",
       true,
     );
     ztoolkit.log(
@@ -42,7 +43,7 @@ export async function registerPrefsScripts(_window: Window) {
 
       // Specifically check the server enabled element
       const serverEnabledElement = doc.querySelector(
-        "#zotero-prefpane-zotero-mcp-plugin-mcp-server-enabled",
+        "#zotero-prefpane-zotero-research-bridge-mcp-server-enabled",
       );
       if (serverEnabledElement) {
         ztoolkit.log(
@@ -78,7 +79,7 @@ function bindPrefEvents() {
   if (serverEnabledCheckbox) {
     // Initialize checkbox state
     const currentEnabled = Zotero.Prefs.get(
-      "extensions.zotero.zotero-mcp-plugin.mcp.server.enabled",
+      "extensions.zotero.zotero-research-bridge.mcp.server.enabled",
       true,
     );
     if (currentEnabled !== false) {
@@ -100,7 +101,7 @@ function bindPrefEvents() {
 
       // Update preference manually
       Zotero.Prefs.set(
-        "extensions.zotero.zotero-mcp-plugin.mcp.server.enabled",
+        "extensions.zotero.zotero-research-bridge.mcp.server.enabled",
         checked,
         true,
       );
@@ -108,7 +109,7 @@ function bindPrefEvents() {
 
       // Verify the preference was set
       const verify = Zotero.Prefs.get(
-        "extensions.zotero.zotero-mcp-plugin.mcp.server.enabled",
+        "extensions.zotero.zotero-research-bridge.mcp.server.enabled",
         true,
       );
       ztoolkit.log(`[PreferenceScript] Verified preference value: ${verify}`);
@@ -121,10 +122,13 @@ function bindPrefEvents() {
             ztoolkit.log(`[PreferenceScript] Starting server manually...`);
             if (!httpServer.isServerRunning()) {
               const portPref = Zotero.Prefs.get(
-                "extensions.zotero.zotero-mcp-plugin.mcp.server.port",
+                "extensions.zotero.zotero-research-bridge.mcp.server.port",
                 true,
               );
-              const port = typeof portPref === "number" ? portPref : 23120;
+              const port =
+                typeof portPref === "number"
+                  ? portPref
+                  : BRIDGE_POLICY.defaultPort;
               httpServer.start(port);
               ztoolkit.log(`[PreferenceScript] Server started on port ${port}`);
             }
@@ -175,9 +179,9 @@ function bindPrefEvents() {
         // Reset to previous valid value
         const originalPort =
           Zotero.Prefs.get(
-            "extensions.zotero.zotero-mcp-plugin.mcp.server.port",
+            "extensions.zotero.zotero-research-bridge.mcp.server.port",
             true,
-          ) || 23120;
+          ) || BRIDGE_POLICY.defaultPort;
         portInput.value = originalPort.toString();
       }
     }
@@ -185,8 +189,7 @@ function bindPrefEvents() {
 
   // Auth token UI: read current token (auto-creating one if absent), allow
   // copy and regenerate. Token is stored in
-  // extensions.zotero.zotero-mcp-plugin.mcp.server.authToken via
-  // serverPreferences.ensureAuthToken.
+  // The value is stored via serverPreferences.ensureAuthToken.
   const tokenInput = doc?.querySelector(
     `#zotero-prefpane-${config.addonRef}-auth-token-display`,
   ) as HTMLInputElement;
@@ -260,8 +263,12 @@ function bindPrefEvents() {
   generateButton?.addEventListener("click", () => {
     try {
       const clientType = clientSelect?.value || "claude-desktop";
-      const serverName = serverNameInput?.value?.trim() || "zotero-mcp";
-      const port = parseInt(portInput?.value || "23120", 10);
+      const serverName =
+        serverNameInput?.value?.trim() || "zotero-research-bridge";
+      const port = parseInt(
+        portInput?.value || String(BRIDGE_POLICY.defaultPort),
+        10,
+      );
 
       // Generate configuration
       currentConfig = ClientConfigGenerator.generateConfig(

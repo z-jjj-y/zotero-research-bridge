@@ -1,37 +1,32 @@
 {
-  "name": "zotero-mcp-plugin",
+  "name": "zotero-research-bridge",
   "type": "module",
-  "version": "1.8.6",
-  "description": "Zotero MCP for Claude Code",
+  "version": "0.1.0",
+  "description": "Local, authenticated research-management bridge for Zotero",
   "config": {
-    "addonName": "Zotero MCP for Claude Code",
-    "addonID": "zotero-mcp-plugin@lricher7329.github.io",
-    "addonRef": "zotero-mcp-plugin",
-    "addonInstance": "ZoteroMCP",
-    "prefsPrefix": "extensions.zotero.zotero-mcp-plugin"
+    "addonName": "Zotero Research Bridge",
+    "addonID": "zotero-research-bridge@local.litzeng",
+    "addonRef": "zotero-research-bridge",
+    "addonInstance": "ZoteroResearchBridge",
+    "prefsPrefix": "extensions.zotero.zotero-research-bridge"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lricher7329/zotero-mcp-claude-code.git"
+    "url": "git+https://github.com/z-jjj-y/zotero-research-bridge.git"
   },
-  "author": "lricher7329",
+  "author": "Zotero Research Bridge contributors",
   "bugs": {
-    "url": "https://github.com/lricher7329/zotero-mcp-claude-code/issues"
+    "url": "https://github.com/z-jjj-y/zotero-research-bridge/issues"
   },
-  "homepage": "https://github.com/lricher7329/zotero-mcp-claude-code#readme",
+  "homepage": "https://github.com/z-jjj-y/zotero-research-bridge#readme",
   "license": "MIT",
   "scripts": {
     "start": "zotero-plugin serve",
     "build": "zotero-plugin build && tsc --noEmit",
     "lint:check": "prettier --check . && eslint .",
     "lint:fix": "prettier --write . && eslint . --fix",
-    "release": "npm version patch --force -m \"Release v%s\" && git push --follow-tags",
-    "release:beta": "npm version prepatch --preid beta --force -m \"Release v%s\" && git push --follow-tags",
-    "prepare-release": "node scripts/prepare-release.js",
-    "release:init": "node scripts/init-release.js",
     "test": "zotero-plugin test",
     "test:unit": "mocha",
-    "test:update": "node scripts/test-update.js",
     "update-deps": "npm update --save"
   },
   "dependencies": {
@@ -48,8 +43,8 @@
     "prettier": "^3.6.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.2",
-    "zotero-plugin-scaffold": "^0.8.0",
-    "zotero-types": "^4.1.0-beta.1"
+    "zotero-plugin-scaffold": "0.8.0",
+    "zotero-types": "4.1.3"
   },
   "prettier": {
     "printWidth": 80,

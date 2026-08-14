@@ -45,6 +45,9 @@ const mockNotes: Record<number, { getNote: () => string }> = {
     getItemTypeFields: (typeID: number) => mockItemTypeFields[typeID] || [],
     getName: (fieldID: number) => mockFieldNames[fieldID] || "",
   },
+  ItemTypes: {
+    getName: (typeID: number) => (typeID === 4 ? "journalArticle" : ""),
+  },
   Collections: {
     get: (cid: number) => mockCollections[cid] || null,
   },
@@ -147,6 +150,18 @@ describe("itemFormatter", function () {
       expect(out.key).to.equal("WXYZ5678");
       expect(out.itemType).to.equal("book");
       expect(out.zoteroUrl).to.equal("zotero://select/library/items/WXYZ5678");
+    });
+
+    it("resolves itemType from itemTypeID in the real Zotero item shape", async function () {
+      const item = makeItem({
+        key: "TYPE0001",
+        itemType: "journalArticle",
+        itemTypeID: 4,
+        fields: { title: "Type Resolution" },
+      });
+      delete item.itemType;
+      const out = await formatItem(item);
+      expect(out.itemType).to.equal("journalArticle");
     });
   });
 

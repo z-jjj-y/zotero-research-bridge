@@ -1,4 +1,5 @@
 import { config } from "../../package.json";
+import { BRIDGE_POLICY } from "./bridgePolicy";
 
 declare let ztoolkit: ZToolkit;
 declare let Zotero: any;
@@ -7,9 +8,7 @@ const PREFS_PREFIX = config.prefsPrefix;
 
 const MCP_SERVER_PORT = `${PREFS_PREFIX}.mcp.server.port`;
 const MCP_SERVER_ENABLED = `${PREFS_PREFIX}.mcp.server.enabled`;
-const MCP_SERVER_ALLOW_REMOTE = `${PREFS_PREFIX}.mcp.server.allowRemote`;
 const MCP_SERVER_AUTH_TOKEN = `${PREFS_PREFIX}.mcp.server.authToken`;
-const MCP_SERVER_REQUIRE_AUTH = `${PREFS_PREFIX}.mcp.server.requireAuth`;
 
 // Per-scope write opt-ins. Default false; the user enables granularly.
 // Splitting these reduces blast radius when an LLM is prompt-injected.
@@ -64,11 +63,8 @@ class ServerPreferences {
       }
     };
 
-    setIfUnset(MCP_SERVER_PORT, 23120);
+    setIfUnset(MCP_SERVER_PORT, BRIDGE_POLICY.defaultPort);
     setIfUnset(MCP_SERVER_ENABLED, true);
-    // Auth defaults: required when remote, optional on loopback. Token is
-    // generated on first start (see ensureAuthToken).
-    setIfUnset(MCP_SERVER_REQUIRE_AUTH, false);
 
     // Migrate legacy mcp.write.enabled into per-scope prefs on first run.
     const legacy = Zotero.Prefs.get(MCP_WRITE_ENABLED_LEGACY, true);
@@ -94,15 +90,14 @@ class ServerPreferences {
   }
 
   public getPort(): number {
-    const DEFAULT_PORT = 23120;
     try {
       const port = Zotero.Prefs.get(MCP_SERVER_PORT, true);
       if (port === undefined || port === null || isNaN(Number(port))) {
-        return DEFAULT_PORT;
+        return BRIDGE_POLICY.defaultPort;
       }
       return Number(port);
     } catch {
-      return DEFAULT_PORT;
+      return BRIDGE_POLICY.defaultPort;
     }
   }
 
@@ -121,33 +116,15 @@ class ServerPreferences {
   }
 
   public isRemoteAccessAllowed(): boolean {
-    try {
-      const allowRemote = Zotero.Prefs.get(MCP_SERVER_ALLOW_REMOTE, true);
-      if (allowRemote === undefined || allowRemote === null) return false;
-      return Boolean(allowRemote);
-    } catch (error) {
-      ztoolkit.log(
-        `[ServerPreferences] Error getting allow remote status: ${error}`,
-        "error",
-      );
-      return false;
-    }
+    return BRIDGE_POLICY.remoteAccessAllowed;
   }
 
   /**
-   * Auth token gates /mcp access. When remote access is enabled, auth is
-   * mandatory regardless of the requireAuth pref; the pref only governs
-   * whether loopback callers must also present the token.
+   * Auth token gates all mutating and MCP requests. This is intentionally not
+   * configurable: a stale local preference must not disable authentication.
    */
   public requiresAuth(): boolean {
-    if (this.isRemoteAccessAllowed()) return true;
-    try {
-      const v = Zotero.Prefs.get(MCP_SERVER_REQUIRE_AUTH, true);
-      if (v === undefined || v === null) return false;
-      return Boolean(v);
-    } catch {
-      return false;
-    }
+    return BRIDGE_POLICY.authenticationRequired;
   }
 
   public getAuthToken(): string {
@@ -248,13 +225,11 @@ class ServerPreferences {
 
   private register(): void {
     // Watch every pref that affects how the listener binds or what it serves.
-    // Without this, port/allowRemote changes silently fail to take effect
-    // until the user toggles the master enable.
+    // Without this, port changes silently fail to take effect until the user
+    // toggles the master enable.
     const watched = [
       MCP_SERVER_ENABLED,
       MCP_SERVER_PORT,
-      MCP_SERVER_ALLOW_REMOTE,
-      MCP_SERVER_REQUIRE_AUTH,
       MCP_SERVER_AUTH_TOKEN,
       ...Object.values(SCOPE_PREFS),
     ];

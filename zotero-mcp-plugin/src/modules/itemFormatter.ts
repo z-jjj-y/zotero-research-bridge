@@ -161,17 +161,29 @@ export async function formatItem(
       "attachments",
     ];
   }
-  const formattedItem: Record<string, any> = {
-    key: item.key,
-    itemType: item.itemType,
-    zoteroUrl: `zotero://select/library/items/${item.key}`,
-  };
-
   // Safe string getter function - consistent with other modules
   function safeGetString(value: any): string {
     if (value === null || value === undefined) return "";
     return String(value);
   }
+
+  function getItemTypeName(): string {
+    const directName = safeGetString((item as any).itemType);
+    if (directName) return directName;
+    try {
+      return safeGetString(
+        (Zotero as any).ItemTypes.getName((item as any).itemTypeID),
+      );
+    } catch {
+      return "";
+    }
+  }
+
+  const formattedItem: Record<string, any> = {
+    key: item.key,
+    itemType: getItemTypeName(),
+    zoteroUrl: `zotero://select/library/items/${item.key}`,
+  };
 
   for (const field of fieldsToExport) {
     try {
@@ -394,6 +406,9 @@ export async function formatItem(
             ztoolkit.log(`[ItemFormatter] Error getting date: ${e}`, "error");
             formattedItem[field] = "";
           }
+          break;
+        case "itemType":
+          formattedItem[field] = getItemTypeName();
           break;
         default:
           try {

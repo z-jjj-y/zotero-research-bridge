@@ -13,7 +13,7 @@ import {
 
 // Preference key for auto-update setting
 const PREF_SEMANTIC_AUTO_UPDATE =
-  "extensions.zotero.zotero-mcp-plugin.semantic.autoUpdate";
+  "extensions.zotero.zotero-research-bridge.semantic.autoUpdate";
 
 // Store notifier ID for cleanup
 let itemNotifierID: string | null = null;
@@ -245,7 +245,7 @@ function registerItemNotifier() {
       },
     },
     ["item"],
-    "zotero-mcp-plugin-auto-update",
+    "zotero-research-bridge-auto-update",
   );
 
   ztoolkit.log(`[MCP Plugin] Item notifier registered: ${itemNotifierID}`);
@@ -510,11 +510,11 @@ async function onStartup() {
     // Additional check: query underlying preferences directly
     try {
       const directEnabled = Zotero.Prefs.get(
-        "extensions.zotero.zotero-mcp-plugin.mcp.server.enabled",
+        "extensions.zotero.zotero-research-bridge.mcp.server.enabled",
         true,
       );
       const directPort = Zotero.Prefs.get(
-        "extensions.zotero.zotero-mcp-plugin.mcp.server.port",
+        "extensions.zotero.zotero-research-bridge.mcp.server.port",
         true,
       );
       ztoolkit.log(
@@ -544,7 +544,7 @@ async function onStartup() {
 
       // Check if this was reset after first startup
       const hasBeenEnabled = Zotero.Prefs.get(
-        "extensions.zotero.zotero-mcp-plugin.debug.hasBeenEnabled",
+        "extensions.zotero.zotero-research-bridge.debug.hasBeenEnabled",
         false,
       );
       if (!hasBeenEnabled) {
@@ -563,7 +563,7 @@ async function onStartup() {
       // Server is enabled, start it
       // Record that server has been enabled before
       Zotero.Prefs.set(
-        "extensions.zotero.zotero-mcp-plugin.debug.hasBeenEnabled",
+        "extensions.zotero.zotero-research-bridge.debug.hasBeenEnabled",
         true,
         true,
       );
@@ -597,8 +597,8 @@ async function onStartup() {
     ztoolkit.log(`[MCP Plugin] Preference changed: ${name}`);
 
     if (
-      name === "extensions.zotero.zotero-mcp-plugin.mcp.server.port" ||
-      name === "extensions.zotero.zotero-mcp-plugin.mcp.server.enabled"
+      name === "extensions.zotero.zotero-research-bridge.mcp.server.port" ||
+      name === "extensions.zotero.zotero-research-bridge.mcp.server.enabled"
     ) {
       try {
         // Stop server first
@@ -790,11 +790,11 @@ async function onPrefsEvent(type: string, data: { [key: string]: any }) {
 
           // Check current preference state
           const currentEnabled = Zotero.Prefs.get(
-            "extensions.zotero.zotero-mcp-plugin.mcp.server.enabled",
+            "extensions.zotero.zotero-research-bridge.mcp.server.enabled",
             true,
           );
           const currentPort = Zotero.Prefs.get(
-            "extensions.zotero.zotero-mcp-plugin.mcp.server.port",
+            "extensions.zotero.zotero-research-bridge.mcp.server.port",
             true,
           );
           ztoolkit.log(
@@ -806,10 +806,10 @@ async function onPrefsEvent(type: string, data: { [key: string]: any }) {
             try {
               const doc = data.window.document;
               const enabledElement = doc?.querySelector(
-                "#zotero-prefpane-zotero-mcp-plugin-mcp-server-enabled",
+                "#zotero-prefpane-zotero-research-bridge-mcp-server-enabled",
               );
               const portElement = doc?.querySelector(
-                "#zotero-prefpane-zotero-mcp-plugin-mcp-server-port",
+                "#zotero-prefpane-zotero-research-bridge-mcp-server-port",
               );
 
               ztoolkit.log(
@@ -884,9 +884,9 @@ function checkFirstInstallation() {
  */
 function showFirstInstallPrompt() {
   try {
-    const title = "Welcome to Zotero MCP for Claude Code";
+    const title = "Welcome to Zotero Research Bridge";
     const promptText =
-      "Thank you for installing Zotero MCP for Claude Code! To get started, you need to generate configuration files for your AI clients. Would you like to open the settings page now to generate configurations?";
+      "Thank you for installing Zotero Research Bridge! To get started, you need to generate configuration files for your AI clients. Would you like to open the settings page now to generate configurations?";
     const openPrefsText = "Open Settings";
     const laterText = "Configure Later";
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Zotero Research Workflow"
+  short_description: "Safely import, organize, analyze, and annotate Zotero papers"
+  default_prompt: "Use $zotero-research-workflow to import this PDF into Zotero, classify it, analyze it, and write the analysis back as a child note."

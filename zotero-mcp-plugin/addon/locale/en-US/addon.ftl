@@ -1,9 +1,9 @@
 startup-begin = Addon is loading
 startup-finish = Addon is ready
-menuitem-label = Zotero MCP for Claude Code: Helper Examples
-menupopup-label = Zotero MCP for Claude Code: Menupopup
-menuitem-submenulabel = Zotero MCP for Claude Code
-menuitem-filemenulabel = Zotero MCP for Claude Code: File Menuitem
+menuitem-label = Zotero Research Bridge: Helper Examples
+menupopup-label = Zotero Research Bridge: Menupopup
+menuitem-submenulabel = Zotero Research Bridge
+menuitem-filemenulabel = Zotero Research Bridge: File Menuitem
 prefs-title = Zotero MCP
 prefs-table-title = Title
 prefs-table-detail = Detail

@@ -623,7 +623,7 @@ export function bindSemanticStatsSettings(doc: Document) {
         if (stats.indexStats.storedDimensions) {
           // Get configured dimensions from prefs to show comparison
           const configuredDims = Zotero.Prefs.get(
-            "extensions.zotero.zotero-mcp-plugin.embedding.dimensions",
+            "extensions.zotero.zotero-research-bridge.embedding.dimensions",
             true,
           );
           const configuredDimsNum = configuredDims

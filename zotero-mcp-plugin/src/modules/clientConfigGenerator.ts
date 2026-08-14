@@ -5,6 +5,7 @@
 
 declare let ztoolkit: ZToolkit;
 import { getString } from "../utils/locale";
+import { BRIDGE_POLICY } from "./bridgePolicy";
 
 export interface ClientConfig {
   name: string;
@@ -21,7 +22,10 @@ export class ClientConfigGenerator {
       name: "claude-code",
       displayName: "Claude Code",
       description: "Anthropic's Claude Code CLI tool",
-      configTemplate: (port: number, serverName = "zotero-mcp") => ({
+      configTemplate: (
+        port: number,
+        serverName = "zotero-research-bridge",
+      ) => ({
         mcpServers: {
           [serverName]: {
             serverUrl: `http://127.0.0.1:${port}/mcp`,
@@ -32,12 +36,12 @@ export class ClientConfigGenerator {
           },
         },
       }),
-      getInstructions: (port: number = 23120) => [
+      getInstructions: (port: number = BRIDGE_POLICY.defaultPort) => [
         "1. Use Claude Code's built-in command to add the MCP server:",
-        `   claude mcp add zotero-mcp http://127.0.0.1:${port}/mcp -t http`,
+        `   claude mcp add zotero-research-bridge http://127.0.0.1:${port}/mcp -t http`,
         "",
         "2. Alternatively, add with custom headers:",
-        `   claude mcp add zotero-mcp http://127.0.0.1:${port}/mcp -t http \\`,
+        `   claude mcp add zotero-research-bridge http://127.0.0.1:${port}/mcp -t http \\`,
         "     -H 'Content-Type: application/json' \\",
         "     -H 'User-Agent: Claude-Code-MCP-Client'",
         "",
@@ -67,25 +71,21 @@ export class ClientConfigGenerator {
       displayName: "Codex",
       description: "OpenAI Codex CLI and IDE extension",
       configFormat: "toml",
-      configTemplate: (port: number, serverName = "zotero-mcp") =>
+      configTemplate: (port: number, serverName = "zotero-research-bridge") =>
         `[mcp_servers.${serverName}]
 url = "http://127.0.0.1:${port}/mcp"
-
-# If Zotero MCP requires auth, uncomment this line and set the token
-# in your shell environment before starting Codex:
-# bearer_token_env_var = "ZOTERO_MCP_TOKEN"`,
-      getInstructions: (port: number = 23120) => [
+bearer_token_env_var = "ZOTERO_RESEARCH_BRIDGE_TOKEN"`,
+      getInstructions: (port: number = BRIDGE_POLICY.defaultPort) => [
         "1. Open Codex MCP configuration:",
         "   - Global: ~/.codex/config.toml",
         "   - Project-scoped: .codex/config.toml in a trusted project",
         "",
-        "2. Add the generated [mcp_servers.zotero-mcp] TOML block.",
+        "2. Add the generated [mcp_servers.zotero-research-bridge] TOML block.",
         "",
-        "3. If Require auth token on local connections is enabled in Zotero MCP:",
-        "   export ZOTERO_MCP_TOKEN='zmcp_<your-token>'",
-        "   Then uncomment bearer_token_env_var in the TOML block.",
+        "3. Authentication is mandatory. Copy the token from Zotero Research Bridge settings, then export:",
+        "   export ZOTERO_RESEARCH_BRIDGE_TOKEN='zmcp_<your-token>'",
         "",
-        "4. Restart Codex, or start a new Codex session, then use /mcp to confirm the server is connected.",
+        "4. Restart Codex, or start a new Codex session, then use /mcp to confirm the bridge is connected.",
         "",
         `5. The endpoint should be http://127.0.0.1:${port}/mcp while Zotero is running.`,
       ],
@@ -94,7 +94,10 @@ url = "http://127.0.0.1:${port}/mcp"
       name: "claude-desktop",
       displayName: "Claude Desktop",
       description: "Anthropic's Claude Desktop application",
-      configTemplate: (port: number, serverName = "zotero-mcp") => ({
+      configTemplate: (
+        port: number,
+        serverName = "zotero-research-bridge",
+      ) => ({
         mcpServers: {
           [serverName]: {
             command: "npx",
@@ -112,7 +115,10 @@ url = "http://127.0.0.1:${port}/mcp"
       name: "cline-vscode",
       displayName: "Cline (VS Code)",
       description: "Cline extension for Visual Studio Code",
-      configTemplate: (port: number, serverName = "zotero-mcp") => ({
+      configTemplate: (
+        port: number,
+        serverName = "zotero-research-bridge",
+      ) => ({
         mcpServers: {
           [serverName]: {
             command: "npx",
@@ -132,7 +138,10 @@ url = "http://127.0.0.1:${port}/mcp"
       name: "continue-dev",
       displayName: "Continue.dev",
       description: "Continue coding assistant",
-      configTemplate: (port: number, serverName = "zotero-mcp") => ({
+      configTemplate: (
+        port: number,
+        serverName = "zotero-research-bridge",
+      ) => ({
         experimental: {
           modelContextProtocolServers: [
             {
@@ -155,7 +164,10 @@ url = "http://127.0.0.1:${port}/mcp"
       name: "cursor",
       displayName: "Cursor",
       description: "AI-powered code editor",
-      configTemplate: (port: number, serverName = "zotero-mcp") => ({
+      configTemplate: (
+        port: number,
+        serverName = "zotero-research-bridge",
+      ) => ({
         mcpServers: {
           [serverName]: {
             command: "npx",
@@ -173,7 +185,10 @@ url = "http://127.0.0.1:${port}/mcp"
       name: "cherry-studio",
       displayName: "Cherry Studio",
       description: "AI assistant desktop application",
-      configTemplate: (port: number, serverName = "zotero-mcp") => ({
+      configTemplate: (
+        port: number,
+        serverName = "zotero-research-bridge",
+      ) => ({
         mcpServers: {
           [serverName]: {
             type: "streamableHttp",
@@ -193,7 +208,10 @@ url = "http://127.0.0.1:${port}/mcp"
       name: "gemini-cli",
       displayName: "Gemini CLI",
       description: "Google Gemini command line interface",
-      configTemplate: (port: number, serverName = "zotero-mcp") => ({
+      configTemplate: (
+        port: number,
+        serverName = "zotero-research-bridge",
+      ) => ({
         mcpServers: {
           [serverName]: {
             httpUrl: `http://127.0.0.1:${port}/mcp`,
@@ -214,7 +232,10 @@ url = "http://127.0.0.1:${port}/mcp"
       name: "chatbox",
       displayName: "Chatbox",
       description: "Desktop AI chat application",
-      configTemplate: (port: number, serverName = "zotero-mcp") => ({
+      configTemplate: (
+        port: number,
+        serverName = "zotero-research-bridge",
+      ) => ({
         mcpServers: {
           [serverName]: {
             command: "npx",
@@ -232,7 +253,10 @@ url = "http://127.0.0.1:${port}/mcp"
       name: "trae-ai",
       displayName: "Trae AI",
       description: "AI-powered development assistant",
-      configTemplate: (port: number, serverName = "zotero-mcp") => ({
+      configTemplate: (
+        port: number,
+        serverName = "zotero-research-bridge",
+      ) => ({
         mcpServers: {
           [serverName]: {
             command: "npx",
@@ -250,7 +274,10 @@ url = "http://127.0.0.1:${port}/mcp"
       name: "qwen-code",
       displayName: "Qwen Code",
       description: "Qwen Code CLI - AI-powered coding assistant",
-      configTemplate: (port: number, serverName = "zotero-mcp") => ({
+      configTemplate: (
+        port: number,
+        serverName = "zotero-research-bridge",
+      ) => ({
         mcpServers: {
           [serverName]: {
             command: "npx",
@@ -268,7 +295,10 @@ url = "http://127.0.0.1:${port}/mcp"
       name: "custom-http",
       displayName: "Custom HTTP Client",
       description: "Generic HTTP MCP client configuration",
-      configTemplate: (port: number, serverName = "zotero-mcp") => ({
+      configTemplate: (
+        port: number,
+        serverName = "zotero-research-bridge",
+      ) => ({
         name: serverName,
         description:
           "Zotero MCP Server - Research management and citation tools",
@@ -308,7 +338,10 @@ url = "http://127.0.0.1:${port}/mcp"
       throw new Error(`Unsupported client: ${clientName}`);
     }
 
-    const config = client.configTemplate(port, serverName || "zotero-mcp");
+    const config = client.configTemplate(
+      port,
+      serverName || "zotero-research-bridge",
+    );
     return client.configFormat === "toml"
       ? String(config)
       : JSON.stringify(config, null, 2);
@@ -331,7 +364,7 @@ url = "http://127.0.0.1:${port}/mcp"
 
     const config = this.generateConfig(clientName, port, serverName);
     const instructions = this.getInstructions(clientName, port);
-    const actualServerName = serverName || "zotero-mcp";
+    const actualServerName = serverName || "zotero-research-bridge";
     const configLanguage = client.configFormat || "json";
     const configHeader =
       client.configFormat === "toml"

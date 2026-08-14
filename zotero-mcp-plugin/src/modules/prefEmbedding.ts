@@ -121,7 +121,7 @@ export function bindEmbeddingSettings(doc: Document) {
   // Initialize provider select from saved apiBase
   if (providerSelect) {
     const savedApiBase = Zotero.Prefs.get(
-      "extensions.zotero.zotero-mcp-plugin.embedding.apiBase",
+      "extensions.zotero.zotero-research-bridge.embedding.apiBase",
       true,
     ) as string;
     providerSelect.value = detectProvider(savedApiBase || "");
@@ -141,22 +141,22 @@ export function bindEmbeddingSettings(doc: Document) {
 
   initValue(
     apiBaseInput,
-    "extensions.zotero.zotero-mcp-plugin.embedding.apiBase",
+    "extensions.zotero.zotero-research-bridge.embedding.apiBase",
     "https://api.openai.com/v1",
   );
   initValue(
     apiKeyInput,
-    "extensions.zotero.zotero-mcp-plugin.embedding.apiKey",
+    "extensions.zotero.zotero-research-bridge.embedding.apiKey",
     "",
   );
   initValue(
     modelInput,
-    "extensions.zotero.zotero-mcp-plugin.embedding.model",
+    "extensions.zotero.zotero-research-bridge.embedding.model",
     "text-embedding-3-small",
   );
   initValue(
     dimensionsInput,
-    "extensions.zotero.zotero-mcp-plugin.embedding.dimensions",
+    "extensions.zotero.zotero-research-bridge.embedding.dimensions",
     "512",
   );
 
@@ -184,7 +184,7 @@ export function bindEmbeddingSettings(doc: Document) {
       if (!supportsCustom) {
         // For non-supporting models, show info about auto-detection
         const detectedDims = Zotero.Prefs.get(
-          "extensions.zotero.zotero-mcp-plugin.embedding.detectedDimensions",
+          "extensions.zotero.zotero-research-bridge.embedding.detectedDimensions",
           true,
         );
         if (detectedDims) {
@@ -209,7 +209,7 @@ export function bindEmbeddingSettings(doc: Document) {
         if (apiBaseInput) {
           apiBaseInput.value = preset.apiBase;
           Zotero.Prefs.set(
-            "extensions.zotero.zotero-mcp-plugin.embedding.apiBase",
+            "extensions.zotero.zotero-research-bridge.embedding.apiBase",
             preset.apiBase,
             true,
           );
@@ -221,7 +221,7 @@ export function bindEmbeddingSettings(doc: Document) {
           if (!modelInput.value.trim()) {
             modelInput.value = preset.modelPlaceholder;
             Zotero.Prefs.set(
-              "extensions.zotero.zotero-mcp-plugin.embedding.model",
+              "extensions.zotero.zotero-research-bridge.embedding.model",
               preset.modelPlaceholder,
               true,
             );
@@ -264,12 +264,15 @@ export function bindEmbeddingSettings(doc: Document) {
 
   bindSave(
     apiBaseInput,
-    "extensions.zotero.zotero-mcp-plugin.embedding.apiBase",
+    "extensions.zotero.zotero-research-bridge.embedding.apiBase",
   );
-  bindSave(apiKeyInput, "extensions.zotero.zotero-mcp-plugin.embedding.apiKey");
+  bindSave(
+    apiKeyInput,
+    "extensions.zotero.zotero-research-bridge.embedding.apiKey",
+  );
   bindSave(
     dimensionsInput,
-    "extensions.zotero.zotero-mcp-plugin.embedding.dimensions",
+    "extensions.zotero.zotero-research-bridge.embedding.dimensions",
     true,
   );
 
@@ -277,7 +280,7 @@ export function bindEmbeddingSettings(doc: Document) {
   modelInput?.addEventListener("change", async () => {
     const model = modelInput.value;
     Zotero.Prefs.set(
-      "extensions.zotero.zotero-mcp-plugin.embedding.model",
+      "extensions.zotero.zotero-research-bridge.embedding.model",
       model,
       true,
     );
@@ -382,7 +385,7 @@ export function bindEmbeddingSettings(doc: Document) {
 
           // Save detected dimensions but don't update config dimensions
           Zotero.Prefs.set(
-            "extensions.zotero.zotero-mcp-plugin.embedding.detectedDimensions",
+            "extensions.zotero.zotero-research-bridge.embedding.detectedDimensions",
             dims,
             true,
           );
@@ -396,7 +399,7 @@ export function bindEmbeddingSettings(doc: Document) {
           if (dims > 0) {
             // Save detected dimensions
             Zotero.Prefs.set(
-              "extensions.zotero.zotero-mcp-plugin.embedding.detectedDimensions",
+              "extensions.zotero.zotero-research-bridge.embedding.detectedDimensions",
               dims,
               true,
             );
@@ -405,7 +408,7 @@ export function bindEmbeddingSettings(doc: Document) {
             if (supportsCustomDimensions(model) && dimensionsInput) {
               dimensionsInput.value = String(dims);
               Zotero.Prefs.set(
-                "extensions.zotero.zotero-mcp-plugin.embedding.dimensions",
+                "extensions.zotero.zotero-research-bridge.embedding.dimensions",
                 dims,
                 true,
               );
@@ -455,21 +458,21 @@ function updateEmbeddingServiceConfig() {
 
     const apiBase =
       Zotero.Prefs.get(
-        "extensions.zotero.zotero-mcp-plugin.embedding.apiBase",
+        "extensions.zotero.zotero-research-bridge.embedding.apiBase",
         true,
       ) || "";
     const apiKey =
       Zotero.Prefs.get(
-        "extensions.zotero.zotero-mcp-plugin.embedding.apiKey",
+        "extensions.zotero.zotero-research-bridge.embedding.apiKey",
         true,
       ) || "";
     const model =
       Zotero.Prefs.get(
-        "extensions.zotero.zotero-mcp-plugin.embedding.model",
+        "extensions.zotero.zotero-research-bridge.embedding.model",
         true,
       ) || "";
     const dimensions = Zotero.Prefs.get(
-      "extensions.zotero.zotero-mcp-plugin.embedding.dimensions",
+      "extensions.zotero.zotero-research-bridge.embedding.dimensions",
       true,
     );
 
@@ -556,17 +559,17 @@ export function bindApiUsageStats(doc: Document) {
 
   initRateLimitValue(
     rpmInput,
-    "extensions.zotero.zotero-mcp-plugin.embedding.rpm",
+    "extensions.zotero.zotero-research-bridge.embedding.rpm",
     "60",
   );
   initRateLimitValue(
     tpmInput,
-    "extensions.zotero.zotero-mcp-plugin.embedding.tpm",
+    "extensions.zotero.zotero-research-bridge.embedding.tpm",
     "150000",
   );
   initRateLimitValue(
     costInput,
-    "extensions.zotero.zotero-mcp-plugin.embedding.costPer1M",
+    "extensions.zotero.zotero-research-bridge.embedding.costPer1M",
     "0.02",
   );
 
@@ -595,15 +598,15 @@ export function bindApiUsageStats(doc: Document) {
 
   bindRateLimitSave(
     rpmInput,
-    "extensions.zotero.zotero-mcp-plugin.embedding.rpm",
+    "extensions.zotero.zotero-research-bridge.embedding.rpm",
   );
   bindRateLimitSave(
     tpmInput,
-    "extensions.zotero.zotero-mcp-plugin.embedding.tpm",
+    "extensions.zotero.zotero-research-bridge.embedding.tpm",
   );
   bindRateLimitSave(
     costInput,
-    "extensions.zotero.zotero-mcp-plugin.embedding.costPer1M",
+    "extensions.zotero.zotero-research-bridge.embedding.costPer1M",
     true,
   );
 
@@ -701,15 +704,15 @@ function updateEmbeddingServiceRateLimits() {
     const embeddingService = getEmbeddingService();
 
     const rpm = Zotero.Prefs.get(
-      "extensions.zotero.zotero-mcp-plugin.embedding.rpm",
+      "extensions.zotero.zotero-research-bridge.embedding.rpm",
       true,
     );
     const tpm = Zotero.Prefs.get(
-      "extensions.zotero.zotero-mcp-plugin.embedding.tpm",
+      "extensions.zotero.zotero-research-bridge.embedding.tpm",
       true,
     );
     const costPer1M = Zotero.Prefs.get(
-      "extensions.zotero.zotero-mcp-plugin.embedding.costPer1M",
+      "extensions.zotero.zotero-research-bridge.embedding.costPer1M",
       true,
     );
 

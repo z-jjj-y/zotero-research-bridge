@@ -1,109 +1,43 @@
-# CLAUDE.md
+# Repository guidance
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Purpose
 
-## Project Overview
+Zotero Research Bridge is an open-source, local-first integration between Zotero and MCP clients. It combines a Zotero add-on with a Codex research workflow Skill.
 
-Zotero MCP is a Zotero plugin that provides Model Context Protocol (MCP) integration, allowing AI clients (Claude Code, Claude Desktop, Cherry Studio, Cursor IDE) to interact with a user's local Zotero library. The plugin includes an integrated MCP server that uses Streamable HTTP protocol.
+## Components
 
-**Architecture:** AI Client ↔ Streamable HTTP ↔ Zotero Plugin (integrated MCP server)
+- `zotero-mcp-plugin/` — Zotero add-on, MCP server, safe CRUD implementation, and tests.
+- `zotero-research-workflow/` — Codex Skill for ingestion, deduplication, classification, analysis, and child-note writeback.
 
-**Fork:** This fork adds Claude Code compatibility. Contributed by lricher7329.
+Read `zotero-mcp-plugin/CLAUDE.md` before modifying add-on code and `zotero-research-workflow/SKILL.md` before modifying the workflow.
 
-## Claude Code Configuration
+## Safety rules
 
-To use with Claude Code, add this to your MCP configuration (`~/.claude.json` or `.mcp.json`):
+- Treat Zotero as the source of truth.
+- Never automate the Zotero desktop UI when an MCP/API operation exists.
+- Never write directly to `zotero.sqlite` or Zotero storage files.
+- Keep networking loopback-only and authenticated.
+- Keep write scopes disabled by default.
+- Perform every mutation through `plan_mutation` and `apply_mutation`.
+- Do not add permanent deletion, trash emptying, library-wide tag deletion, or arbitrary JavaScript execution.
+- Preserve handwritten notes, annotations, and attachments.
+- Never commit tokens, API keys, Zotero profiles, personal PDFs, audit logs, or machine-specific paths.
 
-```json
-{
-  "mcpServers": {
-    "zotero-mcp": {
-      "type": "http",
-      "url": "http://127.0.0.1:23120/mcp"
-    }
-  }
-}
-```
+## Verification
 
-## Build Commands
-
-All commands run from `zotero-mcp-plugin/` directory:
+From `zotero-mcp-plugin/`:
 
 ```bash
-npm install          # Install dependencies
-npm run build        # Build plugin and run TypeScript type checking
-npm run start        # Development mode with auto-reload
-npm run lint:check   # Check formatting and linting
-npm run lint:fix     # Fix formatting and linting issues
-npm run test         # Run tests via zotero-plugin-scaffold
+npm run test:unit
+npm run build
+npm run lint:check
 ```
 
-## Code Architecture
+Use the isolated Zotero integration suite for runtime changes. Validate the workflow Skill with the Codex skill validator.
 
-### Entry Points
-- [src/index.ts](zotero-mcp-plugin/src/index.ts) - Plugin bootstrap
-- [src/addon.ts](zotero-mcp-plugin/src/addon.ts) - Main Addon class, exposes API methods
-- [src/hooks.ts](zotero-mcp-plugin/src/hooks.ts) - Lifecycle hooks (startup, shutdown, prefs events), starts HTTP server
+## Git remotes
 
-### Core Modules (`src/modules/`)
-- [httpServer.ts](zotero-mcp-plugin/src/modules/httpServer.ts) - HTTP server using Mozilla nsIServerSocket, routes requests to MCP server or REST endpoints
-- [streamableMCPServer.ts](zotero-mcp-plugin/src/modules/streamableMCPServer.ts) - MCP protocol implementation, handles JSON-RPC 2.0 requests, defines all MCP tools
-- [searchEngine.ts](zotero-mcp-plugin/src/modules/searchEngine.ts) - Advanced search with boolean operators, relevance scoring, field queries
-- [apiHandlers.ts](zotero-mcp-plugin/src/modules/apiHandlers.ts) - HTTP request handlers for search, items, collections, fulltext
+- `origin` is the maintained repository: `z-jjj-y/zotero-research-bridge`.
+- `upstream` is the read-only source project: `lricher7329/zotero-mcp-claude-code`.
 
-### Content Extraction
-- [unifiedContentExtractor.ts](zotero-mcp-plugin/src/modules/unifiedContentExtractor.ts) - Unified content extraction from PDFs, notes, attachments
-- [smartAnnotationExtractor.ts](zotero-mcp-plugin/src/modules/smartAnnotationExtractor.ts) - Annotation extraction with relevance scoring
-- [pdfService.ts](zotero-mcp-plugin/src/modules/pdfService.ts) / [pdfProcessor.ts](zotero-mcp-plugin/src/modules/pdfProcessor.ts) - PDF text extraction
-
-### Configuration
-- [serverPreferences.ts](zotero-mcp-plugin/src/modules/serverPreferences.ts) - Server port and enabled state preferences
-- [mcpSettingsService.ts](zotero-mcp-plugin/src/modules/mcpSettingsService.ts) - MCP-specific settings (content modes, token limits)
-- [clientConfigGenerator.ts](zotero-mcp-plugin/src/modules/clientConfigGenerator.ts) - Generates AI client configuration JSON
-
-### Utilities
-- [utils/prefs.ts](zotero-mcp-plugin/src/utils/prefs.ts) - Preference getters/setters
-- [utils/ztoolkit.ts](zotero-mcp-plugin/src/utils/ztoolkit.ts) - ZToolkit factory for Zotero plugin utilities
-
-## MCP Tools Provided
-
-The plugin exposes these tools via MCP protocol:
-- `search_library` - Library search with advanced filtering
-- `search_annotations` - Search annotations/highlights
-- `get_item_details` - Get item metadata
-- `get_annotations` - Get annotations for items
-- `get_content` - Unified content extraction (PDF, notes, abstract)
-- `get_collections` / `search_collections` / `get_collection_details` / `get_collection_items` / `get_subcollections` - Collection operations
-- `search_fulltext` - Full-text search with context
-- `get_item_abstract` - Get item abstract
-- `import_attachment_url` - Import a file attachment from a URL. Accepts an optional `contentType` override; when omitted, the handler infers `application/pdf` for `.pdf`/`/pdf/` URLs and `application/epub+zip` for `.epub` URLs (see `inferContentTypeFromURL` in [writeHandlers.ts](zotero-mcp-plugin/src/modules/writeHandlers.ts)) so Zotero takes the binary-download path instead of the fragile SingleFile snapshot path. PMC `/pdf/` URLs are gated by a proof-of-work cookie (`cloudpmc-viewer-pow`) that server-side fetchers can't satisfy, so [pmcURLResolver.ts](zotero-mcp-plugin/src/modules/pmcURLResolver.ts) reroutes them through the EuropePMC mirror (`https://europepmc.org/articles/PMC###?pdf=render`), which serves the same OA content without the gate. Non-OA articles fall through to the original URL. Supports `dryRun: true` to preview the action without writing, and `ifExists: "add" | "skip" | "replace"` to dedup against existing same-content-type attachments on the parent (default `"add"` preserves backward-compat; `"replace"` requires the `delete` write scope).
-
-## Key Technical Details
-
-- **Target:** Zotero 7, 8, and 9 (manifest `strict_min_version: "6.999"`, `strict_max_version: "9.*"`); Firefox 115 (ESR) runtime
-- **Protocol:** MCP 2024-11-05 and 2025-03-26 with Streamable HTTP transport
-- **Default Port:** 23120
-- **Endpoints:** `/mcp` (MCP requests), `/ping` (health check), `/mcp/status`, `/capabilities`
-- **HTTP Methods:** GET, POST, DELETE (for session termination)
-
-## Claude Code Compatibility Changes
-
-This fork includes the following changes for Claude Code compatibility:
-
-1. **Request body reading** - Properly reads full POST body based on Content-Length (up to 64KB)
-2. **Accept header validation** - Validates client accepts application/json per MCP spec
-3. **DELETE method support** - Session termination per MCP spec
-4. **Notification handling** - Returns HTTP 202 for JSON-RPC notifications (requests without id)
-5. **Batch request support** - Handles JSON arrays of requests
-6. **Protocol version support** - Supports both 2024-11-05 and 2025-03-26 versions
-
-## Development Notes
-
-- Uses `zotero-plugin-toolkit` for plugin utilities
-- Uses `zotero-plugin-scaffold` for build tooling
-- HTTP server uses Mozilla's `nsIServerSocket` component
-- Preferences stored under `extensions.zotero.zotero-mcp-plugin.*`
-- Logging uses `ztoolkit.log()` with `===MCP===` prefix for easy filtering
-- All source code comments and error messages are in English
-- Chinese locale files (`addon/locale/zh-CN/`) are for UI translations only
-- Chinese stop word lists in NLP/annotation code are functional data and should remain
+Merge upstream changes in a dedicated branch and re-test all security invariants.

@@ -174,21 +174,23 @@ const DEFAULT_CONFIG: EmbeddingConfig = {
 };
 
 // Preference keys for storing API configuration
-const PREF_API_BASE = "extensions.zotero.zotero-mcp-plugin.embedding.apiBase";
-const PREF_API_KEY = "extensions.zotero.zotero-mcp-plugin.embedding.apiKey";
-const PREF_MODEL = "extensions.zotero.zotero-mcp-plugin.embedding.model";
+const PREF_API_BASE =
+  "extensions.zotero.zotero-research-bridge.embedding.apiBase";
+const PREF_API_KEY =
+  "extensions.zotero.zotero-research-bridge.embedding.apiKey";
+const PREF_MODEL = "extensions.zotero.zotero-research-bridge.embedding.model";
 const PREF_DIMENSIONS =
-  "extensions.zotero.zotero-mcp-plugin.embedding.dimensions";
+  "extensions.zotero.zotero-research-bridge.embedding.dimensions";
 const PREF_DETECTED_DIMENSIONS =
-  "extensions.zotero.zotero-mcp-plugin.embedding.detectedDimensions";
+  "extensions.zotero.zotero-research-bridge.embedding.detectedDimensions";
 
 // Preference keys for rate limit and usage stats
-const PREF_RPM = "extensions.zotero.zotero-mcp-plugin.embedding.rpm";
-const PREF_TPM = "extensions.zotero.zotero-mcp-plugin.embedding.tpm";
+const PREF_RPM = "extensions.zotero.zotero-research-bridge.embedding.rpm";
+const PREF_TPM = "extensions.zotero.zotero-research-bridge.embedding.tpm";
 const PREF_COST_PER_1M =
-  "extensions.zotero.zotero-mcp-plugin.embedding.costPer1M";
+  "extensions.zotero.zotero-research-bridge.embedding.costPer1M";
 const PREF_USAGE_STATS =
-  "extensions.zotero.zotero-mcp-plugin.embedding.usageStats";
+  "extensions.zotero.zotero-research-bridge.embedding.usageStats";
 
 // Default rate limit config
 const DEFAULT_RATE_LIMIT: RateLimitConfig = {

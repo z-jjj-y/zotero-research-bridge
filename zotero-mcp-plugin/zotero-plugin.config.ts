@@ -1,5 +1,6 @@
 import { defineConfig } from "zotero-plugin-scaffold";
 import pkg from "./package.json";
+import { BRIDGE_POLICY } from "./src/modules/bridgePolicy";
 
 export default defineConfig({
   source: ["src", "addon"],
@@ -7,11 +8,8 @@ export default defineConfig({
   name: pkg.config.addonName,
   id: pkg.config.addonID,
   namespace: pkg.config.addonRef,
-  updateURL: `https://github.com/lricher7329/zotero-mcp-claude-code/releases/latest/download/${
-    pkg.version.includes("-") ? "update-beta.json" : "update.json"
-  }`,
-  xpiDownloadLink:
-    "https://github.com/lricher7329/zotero-mcp-claude-code/releases/download/v{{version}}/{{xpiName}}.xpi",
+  updateURL: BRIDGE_POLICY.updateManifestURL,
+  xpiDownloadLink: "",
 
   build: {
     assets: ["addon/**/*.*"],
@@ -39,7 +37,25 @@ export default defineConfig({
     ],
   },
 
+  server: {
+    devtools: false,
+  },
+
   test: {
+    entries: "integration-test",
+    prefs: {
+      [`${pkg.config.prefsPrefix}.mcp.server.port`]: 24121,
+      [`${pkg.config.prefsPrefix}.mcp.server.authToken`]:
+        "zmcp_000000000000000000000000000000000000000000000000",
+      [`${pkg.config.prefsPrefix}.mcp.write.notes`]: true,
+      [`${pkg.config.prefsPrefix}.mcp.write.tags`]: true,
+      [`${pkg.config.prefsPrefix}.mcp.write.collections`]: true,
+      [`${pkg.config.prefsPrefix}.mcp.write.metadata`]: true,
+      [`${pkg.config.prefsPrefix}.mcp.write.delete`]: true,
+      [`${pkg.config.prefsPrefix}.mcp.write.bulk`]: true,
+      [`${pkg.config.prefsPrefix}.mcp.write.import`]: true,
+    },
+    mocha: { timeout: 30_000 },
     waitForPlugin: `() => Zotero.${pkg.config.addonInstance}.data.initialized`,
   },
 

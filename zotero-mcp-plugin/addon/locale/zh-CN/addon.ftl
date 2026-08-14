@@ -1,9 +1,9 @@
 startup-begin = 插件加载中
 startup-finish = 插件已就绪
-menuitem-label = Zotero MCP for Claude Code: 帮助工具样例
-menupopup-label = Zotero MCP for Claude Code: 弹出菜单
-menuitem-submenulabel = Zotero MCP for Claude Code：子菜单
-menuitem-filemenulabel = Zotero MCP for Claude Code: 文件菜单
+menuitem-label = Zotero Research Bridge: 帮助工具样例
+menupopup-label = Zotero Research Bridge: 弹出菜单
+menuitem-submenulabel = Zotero Research Bridge：子菜单
+menuitem-filemenulabel = Zotero Research Bridge: 文件菜单
 prefs-title = Zotero MCP
 prefs-table-title = 标题
 prefs-table-detail = 详情

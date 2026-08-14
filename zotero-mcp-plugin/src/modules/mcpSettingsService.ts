@@ -7,7 +7,8 @@ declare let Zotero: any;
 declare let ztoolkit: ZToolkit;
 
 export class MCPSettingsService {
-  private static readonly PREF_PREFIX = "extensions.zotero.zotero-mcp-plugin.";
+  private static readonly PREF_PREFIX =
+    "extensions.zotero.zotero-research-bridge.";
 
   // Unified content processing modes - single, intuitive system
   private static readonly UNIFIED_MODES = {

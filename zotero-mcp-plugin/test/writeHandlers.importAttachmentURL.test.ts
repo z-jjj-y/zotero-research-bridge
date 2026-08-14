@@ -27,9 +27,11 @@ import { expect } from "chai";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const writeHandlers = require("../src/modules/writeHandlers");
-const { inferContentTypeFromURL } = writeHandlers as {
-  inferContentTypeFromURL: (url: string) => string | undefined;
-};
+const { inferContentTypeFromURL, validateLocalPDFPathShape } =
+  writeHandlers as {
+    inferContentTypeFromURL: (url: string) => string | undefined;
+    validateLocalPDFPathShape: (path: unknown) => string | null;
+  };
 
 describe("inferContentTypeFromURL", function () {
   describe("PDF detection", function () {
@@ -118,6 +120,28 @@ describe("inferContentTypeFromURL", function () {
 
     it("returns undefined for an empty string", function () {
       expect(inferContentTypeFromURL("")).to.equal(undefined);
+    });
+  });
+
+  describe("local PDF path validation", function () {
+    it("accepts absolute PDF paths on Unix and Windows", function () {
+      expect(validateLocalPDFPathShape("/tmp/paper.pdf")).to.equal(null);
+      expect(validateLocalPDFPathShape("C:\\papers\\paper.PDF")).to.equal(null);
+    });
+
+    it("rejects relative paths and non-PDF extensions", function () {
+      expect(validateLocalPDFPathShape("paper.pdf")).to.equal(
+        "sourcePath must be absolute",
+      );
+      expect(validateLocalPDFPathShape("/tmp/paper.txt")).to.equal(
+        "sourcePath must end in .pdf",
+      );
+    });
+
+    it("rejects null bytes", function () {
+      expect(validateLocalPDFPathShape("/tmp/paper.pdf\0.txt")).to.equal(
+        "sourcePath contains a null byte",
+      );
     });
   });
 });

@@ -50,8 +50,8 @@ export class WriteDisabledError extends Error {
     super(
       message ||
         (scope
-          ? `Write scope '${scope}' is disabled. Enable it in Zotero → Settings → Zotero MCP Plugin.`
-          : "Write operations are disabled. Enable the relevant scope in Zotero → Settings → Zotero MCP Plugin."),
+          ? `Write scope '${scope}' is disabled. Enable it in Zotero → Settings → Zotero Research Bridge.`
+          : "Write operations are disabled. Enable the relevant scope in Zotero → Settings → Zotero Research Bridge."),
     );
     this.name = "WriteDisabledError";
     this.scope = scope;
@@ -109,6 +109,15 @@ function assertScope(scope: WriteScope): void {
 /** Require every listed scope (e.g. bulk-trash needs `bulk` AND `delete`). */
 function assertScopes(scopes: WriteScope[]): void {
   for (const s of scopes) assertScope(s);
+}
+
+/** Logging must never turn a completed Zotero mutation into a reported error. */
+function logWrite(message: string): void {
+  try {
+    if (typeof ztoolkit !== "undefined") ztoolkit.log(message);
+  } catch {
+    // Best-effort diagnostics only.
+  }
 }
 
 function resolveItem(itemKey: string): any {
@@ -169,7 +178,7 @@ export async function handleAddNote(args: {
 
   const noteID = await noteItem.saveTx();
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Created note ${noteItem.key} (parent: ${args.itemKey || "standalone"})`,
   );
 
@@ -222,7 +231,7 @@ export async function handleAddTags(args: {
     await item.saveTx();
   }
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Tagged ${args.itemKey}: added=${added.length}, skipped=${skipped.length}`,
   );
 
@@ -270,7 +279,7 @@ export async function handleRemoveTags(args: {
     await item.saveTx();
   }
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Untagged ${args.itemKey}: removed=${removed.length}, notFound=${notFound.length}`,
   );
 
@@ -298,7 +307,7 @@ export async function handleAddToCollection(args: {
 
   // Check if already in collection
   if (collection.hasItem(item.id)) {
-    ztoolkit.log(
+    logWrite(
       `[WriteHandlers] Item ${args.itemKey} already in collection ${args.collectionKey}`,
     );
     return {
@@ -317,7 +326,7 @@ export async function handleAddToCollection(args: {
   item.addToCollection(collection.key);
   await item.saveTx({ skipDateModifiedUpdate: true });
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Added ${args.itemKey} to collection "${collection.name}"`,
   );
 
@@ -355,7 +364,7 @@ export async function handleCreateCollection(args: {
 
   await collection.saveTx();
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Created collection "${collection.name}" (key: ${collection.key})`,
   );
 
@@ -448,7 +457,7 @@ export async function handleUpdateItem(args: {
     await item.saveTx();
   }
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Updated ${args.itemKey}: ${updated.join(", ")} (errors: ${errors.length})`,
   );
 
@@ -530,7 +539,7 @@ export async function handleCreateItem(args: {
 
   const itemID = await item.saveTx();
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Created ${args.itemType} item "${item.getField("title") || "(untitled)"}" (key: ${item.key})`,
   );
 
@@ -558,7 +567,7 @@ export async function handleRemoveFromCollection(args: {
   const collection = resolveCollection(args.collectionKey);
 
   if (!collection.hasItem(item.id)) {
-    ztoolkit.log(
+    logWrite(
       `[WriteHandlers] Item ${args.itemKey} not in collection ${args.collectionKey}`,
     );
     return {
@@ -577,7 +586,7 @@ export async function handleRemoveFromCollection(args: {
   item.removeFromCollection(collection.key);
   await item.saveTx({ skipDateModifiedUpdate: true });
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Removed ${args.itemKey} from collection "${collection.name}"`,
   );
 
@@ -660,7 +669,7 @@ export async function handleBatchTag(args: {
 
   const totalAdded = results.reduce((sum, r) => sum + r.added.length, 0);
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Batch tagged ${args.itemKeys.length} items: ${totalAdded} tags added`,
   );
 
@@ -732,7 +741,7 @@ export async function handleBatchAddToCollection(args: {
 
   const totalAdded = results.filter((r) => r.added).length;
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Batch added ${totalAdded}/${args.itemKeys.length} items to "${collection.name}"`,
   );
 
@@ -793,7 +802,7 @@ export async function handleUpdateNote(args: {
 
   await item.saveTx();
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Updated note ${args.noteKey} (${args.content.length} chars)`,
   );
 
@@ -824,7 +833,7 @@ export async function handleTrashItem(args: {
 
   await Zotero.Items.trashTx(item.id);
 
-  ztoolkit.log(`[WriteHandlers] Trashed item ${args.itemKey} ("${title}")`);
+  logWrite(`[WriteHandlers] Trashed item ${args.itemKey} ("${title}")`);
 
   return {
     success: true,
@@ -858,7 +867,7 @@ export async function handleRenameCollection(args: {
   collection.name = args.newName.trim();
   await collection.saveTx();
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Renamed collection "${oldName}" → "${collection.name}"`,
   );
 
@@ -897,7 +906,7 @@ export async function handleDeleteCollection(args: {
 
   await collection.eraseTx({ deleteItems });
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Deleted collection "${name}" (deleteItems: ${deleteItems})`,
   );
 
@@ -935,7 +944,7 @@ export async function handleRenameTag(args: {
 
   await Zotero.Tags.rename(libraryID, oldName, newName);
 
-  ztoolkit.log(`[WriteHandlers] Renamed tag "${oldName}" → "${newName}"`);
+  logWrite(`[WriteHandlers] Renamed tag "${oldName}" → "${newName}"`);
 
   return {
     success: true,
@@ -970,7 +979,7 @@ export async function handleDeleteTag(args: {
 
   await Zotero.Tags.removeFromLibrary(libraryID, [tagID]);
 
-  ztoolkit.log(`[WriteHandlers] Deleted tag "${tagName}" from library`);
+  logWrite(`[WriteHandlers] Deleted tag "${tagName}" from library`);
 
   return {
     success: true,
@@ -1015,7 +1024,7 @@ export async function handleAddRelatedItem(args: {
     await relatedItem.save();
   });
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Related items ${args.itemKey} ↔ ${args.relatedItemKey}`,
   );
 
@@ -1056,7 +1065,7 @@ export async function handleRemoveRelatedItem(args: {
     await relatedItem.save();
   });
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Unrelated items ${args.itemKey} ↔ ${args.relatedItemKey}`,
   );
 
@@ -1245,6 +1254,10 @@ export interface ExistingAttachmentInfo {
   dateAdded: string;
 }
 
+export interface ExistingAttachmentHashInfo extends ExistingAttachmentInfo {
+  hash: string;
+}
+
 /**
  * Decide what to do given existing same-type attachments and a policy.
  * Pure function — no Zotero access. Extracted so the policy logic can
@@ -1332,7 +1345,7 @@ export async function handleImportAttachmentURL(args: {
     if (resolvedError) {
       // Resolution produced a URL that fails the SSRF guard — refuse to
       // follow it. Keep going with the original URL.
-      ztoolkit.log(
+      logWrite(
         `[WriteHandlers] PMC resolver returned URL that failed SSRF guard (${resolvedError}); using original`,
       );
     } else {
@@ -1455,7 +1468,7 @@ export async function handleImportAttachmentURL(args: {
     throw err;
   }
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Imported attachment from URL: ${importURL} (key: ${attachment.key}, contentType: ${resolvedContentType ?? "auto"})`,
   );
 
@@ -1473,6 +1486,202 @@ export async function handleImportAttachmentURL(args: {
       decision,
       ifExists,
       trashedAttachmentKeys: trashedKeys.length > 0 ? trashedKeys : null,
+    },
+    timestamp: new Date().toISOString(),
+  };
+}
+
+/**
+ * Validate the non-I/O portion of a local PDF path. Runtime validation also
+ * calls PathUtils.isAbsolute(), IOUtils.stat(), and verifies the PDF magic
+ * bytes before Zotero is allowed to copy the file into managed storage.
+ */
+export function validateLocalPDFPathShape(path: unknown): string | null {
+  if (typeof path !== "string" || path.trim().length === 0) {
+    return "sourcePath is required";
+  }
+  if (path.includes("\0")) return "sourcePath contains a null byte";
+  const absoluteShape =
+    path.startsWith("/") ||
+    /^[A-Za-z]:[\\/]/.test(path) ||
+    path.startsWith("\\\\");
+  if (!absoluteShape) return "sourcePath must be absolute";
+  if (!/\.pdf$/i.test(path)) return "sourcePath must end in .pdf";
+  return null;
+}
+
+async function inspectLocalPDF(sourcePath: string): Promise<{
+  size: number;
+  sha256: string;
+  md5: string;
+}> {
+  const shapeError = validateLocalPDFPathShape(sourcePath);
+  if (shapeError) throw new Error(shapeError);
+  if (!PathUtils.isAbsolute(sourcePath)) {
+    throw new Error("sourcePath must be absolute");
+  }
+  if (!(await IOUtils.exists(sourcePath))) {
+    throw new Error(`Local PDF not found: ${sourcePath}`);
+  }
+  const stat = await IOUtils.stat(sourcePath);
+  if (stat.type !== "regular") {
+    throw new Error("sourcePath must refer to a regular file");
+  }
+  const size = stat.size || 0;
+  if (size <= 0) throw new Error("Local PDF is empty");
+  if (size > 2 * 1024 * 1024 * 1024) {
+    throw new Error("Local PDF exceeds the 2 GiB import limit");
+  }
+  const header = await IOUtils.read(sourcePath, { maxBytes: 5 });
+  const expected = [0x25, 0x50, 0x44, 0x46, 0x2d]; // %PDF-
+  if (expected.some((byte, index) => header[index] !== byte)) {
+    throw new Error("File does not have a valid PDF signature");
+  }
+  const [sha256, md5] = await Promise.all([
+    IOUtils.computeHexDigest(sourcePath, "sha256"),
+    Zotero.Utilities.Internal.md5Async(sourcePath),
+  ]);
+  return { size, sha256: sha256.toLowerCase(), md5: md5.toLowerCase() };
+}
+
+async function findMatchingAttachmentsByHash(
+  parentItem: any,
+  md5: string,
+): Promise<ExistingAttachmentHashInfo[]> {
+  if (!parentItem) return [];
+  const ids: number[] = parentItem.getAttachments?.(true) || [];
+  const matches: ExistingAttachmentHashInfo[] = [];
+  for (const id of ids) {
+    const attachment = Zotero.Items.get(id);
+    if (!attachment || attachment.deleted) continue;
+    const contentType = String(attachment.attachmentContentType || "");
+    const filename = String(attachment.attachmentFilename || "");
+    if (
+      contentType.toLowerCase() !== "application/pdf" &&
+      !filename.toLowerCase().endsWith(".pdf")
+    ) {
+      continue;
+    }
+    try {
+      const hash = String(await attachment.attachmentHash).toLowerCase();
+      if (hash !== md5) continue;
+      matches.push({
+        key: attachment.key,
+        title: attachment.getField("title") || filename,
+        contentType,
+        dateAdded: attachment.dateAdded || "",
+        hash,
+      });
+    } catch {
+      // Missing or unavailable attachment files cannot be hash duplicates.
+    }
+  }
+  return matches;
+}
+
+export async function handleImportAttachmentFile(args: {
+  sourcePath: string;
+  parentItemKey?: string;
+  title?: string;
+  dryRun?: boolean;
+  ifExists?: IfExistsPolicy;
+}): Promise<MutationResult> {
+  assertScope("import");
+  const sourcePath = typeof args.sourcePath === "string" ? args.sourcePath : "";
+  const file = await inspectLocalPDF(sourcePath);
+  const libraryID = Zotero.Libraries.userLibraryID;
+  let parentItem: any;
+  if (args.parentItemKey) {
+    parentItem = resolveItem(args.parentItemKey);
+  }
+
+  const ifExists: IfExistsPolicy = args.ifExists ?? "skip";
+  if (!(["add", "skip", "replace"] as string[]).includes(ifExists)) {
+    throw new Error("ifExists must be add, skip, or replace");
+  }
+  const existing = await findMatchingAttachmentsByHash(parentItem, file.md5);
+  const decision = decideImportAction(existing, ifExists);
+  const title = args.title?.trim() || PathUtils.filename(sourcePath);
+
+  if (args.dryRun) {
+    return {
+      success: true,
+      action: "import_attachment_file",
+      itemKey: existing[0]?.key || "",
+      details: {
+        dryRun: true,
+        decision,
+        sourcePath,
+        title,
+        parentItemKey: args.parentItemKey || null,
+        contentType: "application/pdf",
+        size: file.size,
+        sha256: file.sha256,
+        existingAttachments: existing,
+        ifExists,
+      },
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  if (decision === "skip") {
+    return {
+      success: true,
+      action: "import_attachment_file",
+      itemKey: existing[0].key,
+      details: {
+        skipped: true,
+        decision,
+        sourcePath,
+        parentItemKey: args.parentItemKey || null,
+        sha256: file.sha256,
+        existingAttachments: existing,
+      },
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  const trashedAttachmentKeys: string[] = [];
+  if (decision === "replace") {
+    assertScope("delete");
+    for (const existingAttachment of existing) {
+      const attachment = Zotero.Items.getByLibraryAndKey(
+        libraryID,
+        existingAttachment.key,
+      );
+      if (!attachment) continue;
+      await Zotero.Items.trashTx(attachment.id);
+      trashedAttachmentKeys.push(existingAttachment.key);
+    }
+  }
+
+  const attachment = await Zotero.Attachments.importFromFile({
+    file: sourcePath,
+    libraryID,
+    parentItemID: parentItem?.id,
+    title,
+    contentType: "application/pdf",
+  });
+
+  logWrite(
+    `[WriteHandlers] Imported local PDF ${sourcePath} as ${attachment.key}`,
+  );
+  return {
+    success: true,
+    action: "import_attachment_file",
+    itemKey: attachment.key,
+    details: {
+      attachmentKey: attachment.key,
+      parentItemKey: args.parentItemKey || null,
+      title,
+      contentType: "application/pdf",
+      size: file.size,
+      sha256: file.sha256,
+      sourcePath,
+      decision,
+      ifExists,
+      trashedAttachmentKeys:
+        trashedAttachmentKeys.length > 0 ? trashedAttachmentKeys : null,
     },
     timestamp: new Date().toISOString(),
   };
@@ -1525,7 +1734,7 @@ export async function handleRestoreFromTrash(args: {
 
   const title = item.getField("title") || item.key;
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Restored item ${args.itemKey} ("${title}") from trash`,
   );
 
@@ -1589,7 +1798,7 @@ export async function handleMoveCollection(args: {
 
   await collection.saveTx();
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Moved collection "${collection.name}" (parent: ${oldParentKey} → ${args.newParentKey || "root"})`,
   );
 
@@ -1665,7 +1874,7 @@ export async function handleBatchRemoveFromCollection(args: {
 
   const totalRemoved = results.filter((r) => r.removed).length;
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Batch removed ${totalRemoved}/${args.itemKeys.length} items from "${collection.name}"`,
   );
 
@@ -1714,7 +1923,7 @@ export async function handleBatchTrash(args: {
     await Zotero.Items.trashTx(ids);
   }
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Batch trashed ${ids.length}/${args.itemKeys.length} items (errors: ${errors.length})`,
   );
 
@@ -1762,7 +1971,7 @@ export async function handleMoveItemToCollection(args: {
   item.addToCollection(toCollection.key);
   await item.saveTx({ skipDateModifiedUpdate: true });
 
-  ztoolkit.log(
+  logWrite(
     `[WriteHandlers] Moved ${args.itemKey} from "${fromCollection.name}" to "${toCollection.name}"`,
   );
 

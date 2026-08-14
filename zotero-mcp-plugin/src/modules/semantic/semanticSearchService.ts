@@ -24,7 +24,7 @@ declare let ztoolkit: ZToolkit;
 
 // Preference key for persisting index progress
 const PREF_INDEX_PROGRESS =
-  "extensions.zotero.zotero-mcp-plugin.semantic.indexProgress";
+  "extensions.zotero.zotero-research-bridge.semantic.indexProgress";
 
 // ============ Interfaces ============
 

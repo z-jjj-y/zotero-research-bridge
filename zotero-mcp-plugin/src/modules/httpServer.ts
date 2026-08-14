@@ -1,4 +1,5 @@
 import { StreamableMCPServer } from "./streamableMCPServer";
+import { BRIDGE_POLICY } from "./bridgePolicy";
 import { serverPreferences } from "./serverPreferences";
 import { testMCPIntegration } from "./mcpTest";
 
@@ -40,9 +41,8 @@ function writeStringToStream(output: any, str: string): void {
  *   - per-key bucket (per IP, or per session for loopback)
  *   - global bucket as a final cap
  *
- * Both run on every accepted request, regardless of allowRemote, because a
- * prompt-injected LLM or runaway local client can flood the server just as
- * easily as a remote attacker.
+ * Both run on every accepted request because a prompt-injected LLM or runaway
+ * local client can flood the server just as easily as a remote attacker.
  */
 class RateLimiter {
   private buckets: Map<string, { tokens: number; lastRefill: number }> =
@@ -176,11 +176,8 @@ export class HttpServer {
         "@mozilla.org/network/server-socket;1"
       ].createInstance(Ci.nsIServerSocket);
 
-      const loopbackOnly = !serverPreferences.isRemoteAccessAllowed();
-      Zotero.debug(
-        `[HttpServer] Binding to ${loopbackOnly ? "127.0.0.1" : "0.0.0.0"}:${port}`,
-      );
-      this.serverSocket.init(port, loopbackOnly, -1);
+      Zotero.debug(`[HttpServer] Binding to 127.0.0.1:${port}`);
+      this.serverSocket.init(port, BRIDGE_POLICY.loopbackOnly, -1);
       this.serverSocket.asyncListen(this.listener);
       this.isRunning = true;
 
@@ -358,7 +355,7 @@ export class HttpServer {
    * Validate Host, Origin, and Content-Type to prevent DNS-rebinding and
    * browser simple-form CSRF.
    *
-   * - Host: must be a real loopback name when remote access is disabled.
+   * - Host: must be a real loopback name.
    *   `0.0.0.0` is no longer accepted as a loopback alias — Chrome stopped
    *   treating it as one in 2024 and we follow suit.
    * - Origin: when present, must be loopback or browser-extension. `null`
@@ -375,8 +372,6 @@ export class HttpServer {
     method: string,
     path: string,
   ): string | null {
-    const allowRemote = serverPreferences.isRemoteAccessAllowed();
-
     const isLoopbackName = (n: string): boolean => {
       const s = n.toLowerCase().replace(/^\[|\]$/g, "");
       return (
@@ -394,7 +389,7 @@ export class HttpServer {
     const host = this.getRequestHeader(requestText, "Host");
     if (!host) return "missing Host header";
     const hostName = host.replace(/:\d+$/, "");
-    if (!allowRemote && !isLoopbackName(hostName)) {
+    if (!isLoopbackName(hostName)) {
       return `non-loopback Host header (${host})`;
     }
 
@@ -415,10 +410,7 @@ export class HttpServer {
         originUrl.protocol === "chrome-extension:" ||
         originUrl.protocol === "moz-extension:" ||
         originUrl.protocol === "safari-web-extension:";
-      if (
-        !isExtensionOrigin &&
-        !(allowRemote || isLoopbackName(originUrl.hostname))
-      ) {
+      if (!isExtensionOrigin && !isLoopbackName(originUrl.hostname)) {
         return `disallowed Origin (${origin})`;
       }
     }
@@ -896,7 +888,7 @@ export class HttpServer {
             return;
           }
 
-          // 4. Rate limiting (always on, regardless of allowRemote).
+          // 4. Rate limiting (always on).
           const clientKey =
             (transport.host && String(transport.host)) || "unknown";
           if (!this.globalRateLimiter.allow("global")) {
@@ -1260,14 +1252,14 @@ export class HttpServer {
     // it's reconnaissance for an attacker that reached the port.
     return {
       serverInfo: {
-        name: "Zotero MCP for Claude Code",
+        name: "Zotero Research Bridge",
         version: SERVER_INFO_VERSION,
         description:
-          "Model Context Protocol integration for Zotero research management (Claude Code fork)",
-        author: "lricher7329",
-        repository: "https://github.com/lricher7329/zotero-mcp-claude-code",
+          "Local authenticated bridge for Zotero research management",
+        author: "Zotero Research Bridge contributors",
+        repository: "https://github.com/z-jjj-y/zotero-research-bridge",
         documentation:
-          "https://github.com/lricher7329/zotero-mcp-claude-code/blob/main/README.md",
+          "https://github.com/z-jjj-y/zotero-research-bridge/blob/main/README.md",
       },
       protocols: {
         mcp: {
@@ -1316,7 +1308,7 @@ export class HttpServer {
 }
 
 // Single source of truth for the version reported in /capabilities and
-// /mcp/status. Bumped during release per zotero-mcp-plugin/CLAUDE.md.
-export const SERVER_INFO_VERSION = "1.8.6";
+// /mcp/status. Bumped during release.
+export const SERVER_INFO_VERSION = "0.1.0";
 
 export const httpServer = new HttpServer();
