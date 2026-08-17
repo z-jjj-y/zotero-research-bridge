@@ -34,6 +34,7 @@ Changes must preserve these properties:
 - permanent deletion and arbitrary JavaScript execution remain unavailable;
 - the plugin never writes directly to `zotero.sqlite`;
 - audit records redact note bodies, metadata values, tokens, and local source directories.
+- the bundled Codex helper reads the bridge token only from bounded Zotero profile locations, never writes the profile, and never prints the token.
 
 ## Local deployment guidance
 

@@ -35,7 +35,14 @@ If the research workflow Skill changes, validate it from the repository root:
 ```bash
 uv run --with pyyaml python \
   ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
-  zotero-research-workflow
+  plugins/zotero-research-bridge/skills/zotero-research-workflow
+```
+
+Validate the Codex Plugin and its credential-discovery helper:
+
+```bash
+uv run --with pyyaml python ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/zotero-research-bridge
+python3 -m unittest discover -s tests
 ```
 
 ## Pull request expectations

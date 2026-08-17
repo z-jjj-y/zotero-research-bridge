@@ -168,7 +168,29 @@
   </preferences>
 
   <vbox flex="1" style="padding: 10px">
-    <!-- Section 1: MCP Server (expanded by default) -->
+    <!-- Everyday setup: keep protocol details out of the main path. -->
+    <groupbox style="margin-bottom: 15px">
+      <label><html:h2 data-l10n-id="pref-quick-start-title"></html:h2></label>
+      <vbox>
+        <html:p data-l10n-id="pref-quick-start-description"></html:p>
+        <html:div
+          id="workflow-readiness-status"
+          style="margin: 4px 0 10px; font-weight: bold"
+        ></html:div>
+        <hbox>
+          <button
+            id="enable-recommended-workflow-button"
+            data-l10n-id="pref-enable-recommended-workflow-button"
+          ></button>
+        </hbox>
+        <html:div
+          style="margin-top: 8px; color: GrayText; font-size: 11px"
+          data-l10n-id="pref-quick-start-hint"
+        ></html:div>
+      </vbox>
+    </groupbox>
+
+    <!-- Advanced connection and permission details. -->
     <groupbox style="margin-bottom: 15px">
       <label
         ><html:h2
@@ -176,7 +198,7 @@
           data-l10n-id="pref-server-title"
           style="cursor: pointer; user-select: none"
           onclick="var body = document.getElementById('section-server-body'); var isHidden = body.style.display === 'none'; body.style.display = isHidden ? '' : 'none'; this.setAttribute('data-collapsed', isHidden ? 'false' : 'true');"
-          data-collapsed="false"
+          data-collapsed="true"
         ></html:h2
       ></label>
       <vbox id="section-server-body">
@@ -244,7 +266,7 @@
               style="min-width: 80px"
             ></html:label>
             <html:input
-              type="text"
+              type="password"
               id="zotero-prefpane-__addonRef__-auth-token-display"
               readonly="true"
               style="
@@ -338,7 +360,7 @@
       </vbox>
     </groupbox>
 
-    <!-- Section 2: Client Configuration Generator (expanded by default) -->
+    <!-- Advanced manual client configuration. -->
     <groupbox style="margin-bottom: 15px">
       <label
         ><html:h2
@@ -346,7 +368,7 @@
           data-l10n-id="pref-client-config-title"
           style="cursor: pointer; user-select: none"
           onclick="var body = document.getElementById('section-client-config-body'); var isHidden = body.style.display === 'none'; body.style.display = isHidden ? '' : 'none'; this.setAttribute('data-collapsed', isHidden ? 'false' : 'true');"
-          data-collapsed="false"
+          data-collapsed="true"
         ></html:h2
       ></label>
       <vbox id="section-client-config-body">

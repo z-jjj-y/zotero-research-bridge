@@ -4,7 +4,10 @@ import { ClientConfigGenerator } from "./clientConfigGenerator";
 import { BRIDGE_POLICY } from "./bridgePolicy";
 import { bindEmbeddingSettings, bindApiUsageStats } from "./prefEmbedding";
 import { bindSemanticStatsSettings } from "./prefSemanticIndex";
-import { serverPreferences } from "./serverPreferences";
+import {
+  RECOMMENDED_WORKFLOW_SCOPES,
+  serverPreferences,
+} from "./serverPreferences";
 
 export async function registerPrefsScripts(_window: Window) {
   // This function is called when the prefs window is opened
@@ -70,6 +73,7 @@ function bindPrefEvents() {
 
   // Initialize collapsible sections
   initCollapsibleSections(doc);
+  bindQuickStart(doc);
 
   // Server enabled checkbox with manual event handling
   const serverEnabledCheckbox = doc?.querySelector(
@@ -378,14 +382,84 @@ function bindPrefEvents() {
   bindSemanticStatsSettings(doc);
 }
 
+function bindQuickStart(doc: Document) {
+  const button = doc?.querySelector(
+    "#enable-recommended-workflow-button",
+  ) as HTMLButtonElement;
+  const status = doc?.querySelector(
+    "#workflow-readiness-status",
+  ) as HTMLElement;
+
+  const updateStatus = () => {
+    const ready =
+      serverPreferences.isServerEnabled() &&
+      serverPreferences.hasRecommendedWorkflowScopes();
+    if (status) {
+      status.textContent = getString(
+        (ready
+          ? "pref-quick-start-ready"
+          : "pref-quick-start-action-needed") as any,
+      );
+      status.style.color = ready ? "#2e7d32" : "#9a6700";
+    }
+    if (button) button.disabled = ready;
+  };
+
+  button?.addEventListener("click", () => {
+    Zotero.Prefs.set(
+      "extensions.zotero.zotero-research-bridge.mcp.server.enabled",
+      true,
+      true,
+    );
+    serverPreferences.enableRecommendedWorkflowScopes();
+
+    const serverCheckbox = doc.querySelector(
+      `#zotero-prefpane-${config.addonRef}-mcp-server-enabled`,
+    );
+    serverCheckbox?.setAttribute("checked", "true");
+    for (const scope of RECOMMENDED_WORKFLOW_SCOPES) {
+      doc
+        .querySelector(`#zotero-prefpane-${config.addonRef}-mcp-write-${scope}`)
+        ?.setAttribute("checked", "true");
+    }
+    for (const scope of ["delete", "bulk"]) {
+      doc
+        .querySelector(`#zotero-prefpane-${config.addonRef}-mcp-write-${scope}`)
+        ?.removeAttribute("checked");
+    }
+
+    const httpServer = addon.data.httpServer;
+    if (httpServer && !httpServer.isServerRunning()) {
+      httpServer.start(serverPreferences.getPort());
+    }
+    updateStatus();
+  });
+
+  const readinessControls = [
+    `#zotero-prefpane-${config.addonRef}-mcp-server-enabled`,
+    ...RECOMMENDED_WORKFLOW_SCOPES.map(
+      (scope) => `#zotero-prefpane-${config.addonRef}-mcp-write-${scope}`,
+    ),
+    `#zotero-prefpane-${config.addonRef}-mcp-write-delete`,
+    `#zotero-prefpane-${config.addonRef}-mcp-write-bulk`,
+  ];
+  for (const selector of readinessControls) {
+    doc.querySelector(selector)?.addEventListener("command", () => {
+      setTimeout(updateStatus, 0);
+    });
+  }
+
+  updateStatus();
+}
+
 /**
  * Initialize collapsible accordion sections.
  * Adds toggle arrow indicators to section headings and binds hover styles.
  */
 function initCollapsibleSections(doc: Document) {
   const sections = [
-    { id: "server", defaultCollapsed: false },
-    { id: "client-config", defaultCollapsed: false },
+    { id: "server", defaultCollapsed: true },
+    { id: "client-config", defaultCollapsed: true },
     { id: "content", defaultCollapsed: true },
     { id: "embedding", defaultCollapsed: true },
     { id: "semantic-index", defaultCollapsed: true },

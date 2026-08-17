@@ -615,21 +615,22 @@ export class HttpServer {
 
   private readStreamChunk(
     converterStream: any,
-    sin: any,
-    bytesToRead: number,
+    charactersToRead: number,
   ): { chunk: string; bytes: number } {
     try {
       const str: { value?: string } = {};
-      const bytesRead = converterStream.readString(bytesToRead, str);
+      const charactersRead = converterStream.readString(charactersToRead, str);
       const chunk = str.value || "";
-      return { chunk, bytes: chunk ? getByteLength(chunk) : bytesRead };
+      return {
+        chunk,
+        bytes: chunk ? getByteLength(chunk) : charactersRead,
+      };
     } catch (converterError) {
-      ztoolkit.log(
-        `[HttpServer] Converter failed, using fallback: ${converterError}`,
-        "error",
-      );
-      const chunk = sin.read(bytesToRead);
-      return { chunk, bytes: getByteLength(chunk) };
+      const message = String(converterError);
+      if (/WOULD_BLOCK|0x80470007/i.test(message)) {
+        return { chunk: "", bytes: 0 };
+      }
+      throw converterError;
     }
   }
 
@@ -653,7 +654,6 @@ export class HttpServer {
     onSocketAccepted: async (_socket: any, transport: any) => {
       let input: any = null;
       let output: any = null;
-      let sin: any = null;
 
       this.activeTransports.add(transport);
 
@@ -669,11 +669,6 @@ export class HttpServer {
           "@mozilla.org/intl/converter-input-stream;1"
         ].createInstance(Ci.nsIConverterInputStream);
         converterStream.init(input, "UTF-8", 0, 0);
-
-        sin = Cc["@mozilla.org/scriptableinputstream;1"].createInstance(
-          Ci.nsIScriptableInputStream,
-        );
-        sin.init(input);
 
         let requestText = "";
         let totalBytesRead = 0;
@@ -697,15 +692,9 @@ export class HttpServer {
             const available = await this.waitForReadable(input, readDeadline);
             if (available <= 0) break;
 
-            const bytesToRead = Math.min(
-              4096,
-              maxRequestSize - totalBytesRead,
-              available,
-            );
             const { chunk, bytes: chunkBytes } = this.readStreamChunk(
               converterStream,
-              sin,
-              bytesToRead,
+              Math.min(4096, maxRequestSize - totalBytesRead, available),
             );
             if (!chunk || chunkBytes === 0) break;
 
@@ -749,19 +738,25 @@ export class HttpServer {
                 );
                 break;
               }
-              const available = await this.waitForReadable(input, readDeadline);
-              if (available <= 0) break;
-
-              const bytesToRead = Math.min(
-                8192,
-                contentLength - bodyByteCount,
-                available,
-              );
-              const { chunk, bytes: chunkBytes } = this.readStreamChunk(
+              // Header decoding can read ahead into the body. Drain decoded
+              // characters already buffered by nsIConverterInputStream before
+              // consulting the underlying socket's available() count.
+              let readResult = this.readStreamChunk(
                 converterStream,
-                sin,
-                bytesToRead,
+                Math.min(8192, contentLength - bodyByteCount),
               );
+              if (!readResult.chunk || readResult.bytes === 0) {
+                const available = await this.waitForReadable(
+                  input,
+                  readDeadline,
+                );
+                if (available <= 0) break;
+                readResult = this.readStreamChunk(
+                  converterStream,
+                  Math.min(8192, contentLength - bodyByteCount, available),
+                );
+              }
+              const { chunk, bytes: chunkBytes } = readResult;
               if (!chunk || chunkBytes === 0) break;
 
               requestText += chunk;
@@ -789,8 +784,6 @@ export class HttpServer {
             "error",
           );
         }
-        if (sin) sin.close();
-
         // Empty connection (probe / health check)
         if (totalBytesRead === 0 && requestText.length === 0) {
           ztoolkit.log(

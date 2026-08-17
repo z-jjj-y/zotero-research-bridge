@@ -2132,6 +2132,10 @@ export class StreamableMCPServer {
         .filter((tool) => isMutationOperation(tool.name))
         .map((tool) => [tool.name, tool.description]),
     );
+    writeToolDescriptions.set(
+      "link_analysis_file",
+      "Link an existing local analysis.html to its Zotero parent item without copying the report into Zotero storage.",
+    );
     const availableOperations = MUTATION_OPERATIONS.filter((operation) => {
       const required =
         WRITE_TOOL_SCOPES[operation] || MUTATION_SCOPES[operation];

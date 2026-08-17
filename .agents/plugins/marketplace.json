@@ -1,0 +1,20 @@
+{
+  "name": "zrb-marketplace",
+  "interface": {
+    "displayName": "Zotero Research Bridge"
+  },
+  "plugins": [
+    {
+      "name": "zotero-research-bridge",
+      "source": {
+        "source": "local",
+        "path": "./plugins/zotero-research-bridge"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

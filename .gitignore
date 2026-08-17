@@ -23,6 +23,8 @@ build/
 *.tmp
 *.temp
 .cache/
+__pycache__/
+*.py[cod]
 
 # Log files
 *.log

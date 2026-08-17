@@ -1,0 +1,42 @@
+{
+  "name": "zotero-research-bridge",
+  "version": "0.1.0+codex.20260817023845",
+  "description": "Manage and classify local Zotero papers, build required problem\u2013method maps, and optionally generate deep HTML reading reports through conversation.",
+  "author": {
+    "name": "Zotero Research Bridge contributors",
+    "url": "https://github.com/z-jjj-y/zotero-research-bridge"
+  },
+  "homepage": "https://github.com/z-jjj-y/zotero-research-bridge",
+  "repository": "https://github.com/z-jjj-y/zotero-research-bridge",
+  "license": "MIT",
+  "keywords": [
+    "zotero",
+    "research",
+    "papers",
+    "literature",
+    "pdf",
+    "notes"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Zotero Research Bridge",
+    "shortDescription": "Organize and analyze Zotero papers by conversation",
+    "longDescription": "Connect Codex to a local Zotero library to import and deduplicate papers, organize them into research collections, analyze the actual PDF, build required external machine-readable problem\u2013method maps for later matching and innovation analysis, and optionally generate a portable HTML reading report linked back to its Zotero parent item.",
+    "developerName": "Zotero Research Bridge contributors",
+    "category": "Education & Research",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/z-jjj-y/zotero-research-bridge",
+    "defaultPrompt": [
+      "\u6574\u7406\u6211\u7684 Zotero \u6587\u732e\u5e76\u7ed9\u51fa\u5206\u7c7b\u5efa\u8bae\u3002",
+      "\u5206\u6790\u8fd9\u7bc7 Zotero \u8bba\u6587\u5e76\u751f\u6210\u95ee\u9898\u2014\u65b9\u6cd5 map\uff1b\u4e0d\u8981\u751f\u6210\u9605\u8bfb\u62a5\u544a\u3002",
+      "\u5206\u6790\u8fd9\u7bc7 Zotero \u8bba\u6587\uff0c\u751f\u6210 map \u548c\u5b66\u672f\u6df1\u5ea6 HTML \u9605\u8bfb\u62a5\u544a\u3002",
+      "\u5206\u6790\u8fd9\u4e2a Zotero \u96c6\u5408\uff0c\u5e76\u4e3a\u6bcf\u7bc7\u8bba\u6587\u5efa\u7acb\u95ee\u9898\u2014\u65b9\u6cd5\u5339\u914d\u6863\u6848\u3002",
+      "\u628a\u8fd9\u7bc7 PDF \u53bb\u91cd\u540e\u52a0\u5165 Zotero\uff0c\u5e76\u5b8c\u6210\u5206\u7c7b\u3002"
+    ],
+    "brandColor": "#CC2936"
+  }
+}

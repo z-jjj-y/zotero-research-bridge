@@ -1,5 +1,6 @@
 import { appendMutationAudit } from "./mutationAuditLog";
 import {
+  assertKnownMutationArguments,
   isMutationOperation,
   MUTATION_RISKS,
   MUTATION_SCOPES,
@@ -20,6 +21,7 @@ import {
   handleCreateItem,
   handleImportAttachmentFile,
   handleImportAttachmentURL,
+  handleLinkAnalysisFile,
   handleMoveCollection,
   handleMoveItemToCollection,
   handleRemoveFromCollection,
@@ -66,6 +68,7 @@ const MUTATION_HANDLERS: Record<MutationOperation, MutationHandler> = {
   rename_tag: handleRenameTag,
   import_attachment_file: handleImportAttachmentFile,
   import_attachment_url: handleImportAttachmentURL,
+  link_analysis_file: handleLinkAnalysisFile,
 };
 
 const planStore = new MutationPlanStore();
@@ -378,6 +381,20 @@ async function buildPreview(
         preview: dryRun.details,
       };
     }
+    case "link_analysis_file": {
+      const sourcePath = requireString(args.sourcePath, "sourcePath");
+      const parentItemKey = requireKey(args.parentItemKey, "parentItemKey");
+      const dryRun = await handleLinkAnalysisFile({
+        ...args,
+        sourcePath,
+        parentItemKey,
+        dryRun: true,
+      });
+      return {
+        summary: `Link external analysis ${sourcePath.split(/[\\/]/).pop() || sourcePath} to ${dryRun.details.parentTitle}`,
+        preview: dryRun.details,
+      };
+    }
   }
 }
 
@@ -392,10 +409,12 @@ export async function planMutation(args: {
   const exactArguments = cloneMutationData(
     requireObject(args.arguments, "arguments"),
   );
+  assertKnownMutationArguments(operation, exactArguments);
   assertScopes(operation, exactArguments);
   if (
     operation === "import_attachment_file" ||
-    operation === "import_attachment_url"
+    operation === "import_attachment_url" ||
+    operation === "link_analysis_file"
   ) {
     delete exactArguments.dryRun;
   }

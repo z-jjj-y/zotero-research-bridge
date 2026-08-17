@@ -27,11 +27,15 @@ import { expect } from "chai";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const writeHandlers = require("../src/modules/writeHandlers");
-const { inferContentTypeFromURL, validateLocalPDFPathShape } =
-  writeHandlers as {
-    inferContentTypeFromURL: (url: string) => string | undefined;
-    validateLocalPDFPathShape: (path: unknown) => string | null;
-  };
+const {
+  inferContentTypeFromURL,
+  validateLocalAnalysisHTMLPathShape,
+  validateLocalPDFPathShape,
+} = writeHandlers as {
+  inferContentTypeFromURL: (url: string) => string | undefined;
+  validateLocalAnalysisHTMLPathShape: (path: unknown) => string | null;
+  validateLocalPDFPathShape: (path: unknown) => string | null;
+};
 
 describe("inferContentTypeFromURL", function () {
   describe("PDF detection", function () {
@@ -142,6 +146,29 @@ describe("inferContentTypeFromURL", function () {
       expect(validateLocalPDFPathShape("/tmp/paper.pdf\0.txt")).to.equal(
         "sourcePath contains a null byte",
       );
+    });
+  });
+
+  describe("local analysis HTML path validation", function () {
+    it("accepts absolute HTML paths on Unix and Windows", function () {
+      expect(validateLocalAnalysisHTMLPathShape("/tmp/analysis.html")).to.equal(
+        null,
+      );
+      expect(
+        validateLocalAnalysisHTMLPathShape("C:\\papers\\analysis.HTM"),
+      ).to.equal(null);
+    });
+
+    it("rejects relative paths, non-HTML extensions, and null bytes", function () {
+      expect(validateLocalAnalysisHTMLPathShape("analysis.html")).to.equal(
+        "sourcePath must be absolute",
+      );
+      expect(validateLocalAnalysisHTMLPathShape("/tmp/map.json")).to.equal(
+        "sourcePath must end in .html or .htm",
+      );
+      expect(
+        validateLocalAnalysisHTMLPathShape("/tmp/analysis.html\0.txt"),
+      ).to.equal("sourcePath contains a null byte");
     });
   });
 });

@@ -1510,6 +1510,152 @@ export function validateLocalPDFPathShape(path: unknown): string | null {
   return null;
 }
 
+/** Validate the non-I/O portion of an external analysis HTML path. */
+export function validateLocalAnalysisHTMLPathShape(
+  path: unknown,
+): string | null {
+  if (typeof path !== "string" || path.trim().length === 0) {
+    return "sourcePath is required";
+  }
+  if (path.includes("\0")) return "sourcePath contains a null byte";
+  const absoluteShape =
+    path.startsWith("/") ||
+    /^[A-Za-z]:[\\/]/.test(path) ||
+    path.startsWith("\\\\");
+  if (!absoluteShape) return "sourcePath must be absolute";
+  if (!/\.html?$/i.test(path)) {
+    return "sourcePath must end in .html or .htm";
+  }
+  return null;
+}
+
+async function inspectLocalAnalysisHTML(sourcePath: string): Promise<{
+  size: number;
+  sha256: string;
+}> {
+  const shapeError = validateLocalAnalysisHTMLPathShape(sourcePath);
+  if (shapeError) throw new Error(shapeError);
+  if (!PathUtils.isAbsolute(sourcePath)) {
+    throw new Error("sourcePath must be absolute");
+  }
+  if (!(await IOUtils.exists(sourcePath))) {
+    throw new Error(`Local analysis HTML not found: ${sourcePath}`);
+  }
+  const stat = await IOUtils.stat(sourcePath);
+  if (stat.type !== "regular") {
+    throw new Error("sourcePath must refer to a regular file");
+  }
+  const size = stat.size || 0;
+  if (size <= 0) throw new Error("Local analysis HTML is empty");
+  if (size > 100 * 1024 * 1024) {
+    throw new Error("Local analysis HTML exceeds the 100 MiB link limit");
+  }
+  const sha256 = await IOUtils.computeHexDigest(sourcePath, "sha256");
+  return { size, sha256: sha256.toLowerCase() };
+}
+
+async function findLinkedAnalysisByPath(
+  parentItem: any,
+  sourcePath: string,
+): Promise<Record<string, any> | null> {
+  const targetPath = PathUtils.normalize(sourcePath);
+  const attachmentIDs: number[] = parentItem.getAttachments?.(true) || [];
+  for (const attachmentID of attachmentIDs) {
+    const attachment = Zotero.Items.get(attachmentID);
+    if (
+      !attachment ||
+      attachment.deleted ||
+      !attachment.isLinkedFileAttachment?.()
+    ) {
+      continue;
+    }
+    const existingPath = await attachment.getFilePathAsync?.();
+    if (
+      typeof existingPath !== "string" ||
+      PathUtils.normalize(existingPath) !== targetPath
+    ) {
+      continue;
+    }
+    return {
+      attachmentKey: attachment.key,
+      title: attachment.getField?.("title") || PathUtils.filename(sourcePath),
+      contentType: attachment.attachmentContentType || "text/html",
+    };
+  }
+  return null;
+}
+
+/**
+ * Link a portable analysis HTML file as a Zotero child attachment without
+ * copying it into Zotero storage. The external file remains the sole report.
+ */
+export async function handleLinkAnalysisFile(args: {
+  sourcePath: string;
+  parentItemKey: string;
+  title?: string;
+  dryRun?: boolean;
+}): Promise<MutationResult> {
+  assertScope("import");
+  const sourcePath = typeof args.sourcePath === "string" ? args.sourcePath : "";
+  const file = await inspectLocalAnalysisHTML(sourcePath);
+  const parentItem = resolveItem(args.parentItemKey);
+  if (parentItem.isAttachment?.() || parentItem.isNote?.()) {
+    throw new Error("parentItemKey must refer to a regular bibliographic item");
+  }
+  const title = args.title?.trim() || "Paper Analysis";
+  const existing = await findLinkedAnalysisByPath(parentItem, sourcePath);
+  const decision = existing ? "skip" : "link";
+
+  if (args.dryRun || existing) {
+    return {
+      success: true,
+      action: "link_analysis_file",
+      itemKey: existing?.attachmentKey || "",
+      details: {
+        dryRun: Boolean(args.dryRun),
+        skipped: Boolean(existing) && !args.dryRun,
+        decision,
+        sourcePath,
+        parentItemKey: parentItem.key,
+        parentTitle: parentItem.getField?.("title") || parentItem.key,
+        title,
+        contentType: "text/html",
+        size: file.size,
+        sha256: file.sha256,
+        existingAttachment: existing,
+      },
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  const attachment = await Zotero.Attachments.linkFromFile({
+    file: sourcePath,
+    parentItemID: parentItem.id,
+    title,
+    contentType: "text/html",
+  });
+  logWrite(
+    `[WriteHandlers] Linked external analysis ${sourcePath} as ${attachment.key}`,
+  );
+  return {
+    success: true,
+    action: "link_analysis_file",
+    itemKey: attachment.key,
+    details: {
+      attachmentKey: attachment.key,
+      parentItemKey: parentItem.key,
+      title,
+      contentType: "text/html",
+      size: file.size,
+      sha256: file.sha256,
+      sourcePath,
+      decision,
+      linkedFile: true,
+    },
+    timestamp: new Date().toISOString(),
+  };
+}
+
 async function inspectLocalPDF(sourcePath: string): Promise<{
   size: number;
   sha256: string;

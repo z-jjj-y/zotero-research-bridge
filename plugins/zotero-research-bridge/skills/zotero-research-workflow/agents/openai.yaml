@@ -1,0 +1,6 @@
+interface:
+  display_name: "Zotero Research Bridge"
+  short_description: "Build paper maps with optional deep HTML reports"
+  default_prompt: "Use $zotero-research-workflow to analyze my Zotero papers and build the required machine-readable problem–method maps. Generate an academic or storytelling HTML report only when I explicitly request one."
+policy:
+  allow_implicit_invocation: true

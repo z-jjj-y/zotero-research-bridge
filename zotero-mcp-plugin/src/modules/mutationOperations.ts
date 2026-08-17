@@ -24,6 +24,7 @@ export const MUTATION_OPERATIONS = [
   "rename_tag",
   "import_attachment_file",
   "import_attachment_url",
+  "link_analysis_file",
 ] as const;
 
 export type MutationOperation = (typeof MUTATION_OPERATIONS)[number];
@@ -54,6 +55,7 @@ export const MUTATION_SCOPES: Record<MutationOperation, WriteScope[]> = {
   rename_tag: ["tags", "bulk"],
   import_attachment_file: ["import"],
   import_attachment_url: ["import"],
+  link_analysis_file: ["import"],
 };
 
 export const MUTATION_RISKS: Record<MutationOperation, MutationRisk> = {
@@ -80,9 +82,17 @@ export const MUTATION_RISKS: Record<MutationOperation, MutationRisk> = {
   rename_tag: "high",
   import_attachment_file: "medium",
   import_attachment_url: "medium",
+  link_analysis_file: "low",
 };
 
 const MUTATION_OPERATION_SET = new Set<string>(MUTATION_OPERATIONS);
+
+const STRICT_ARGUMENT_KEYS: Partial<
+  Record<MutationOperation, readonly string[]>
+> = {
+  move_collection: ["collectionKey", "newParentKey"],
+  link_analysis_file: ["sourcePath", "parentItemKey", "title"],
+};
 
 const LEGACY_DIRECT_MUTATION_TOOLS = new Set<string>([
   ...MUTATION_OPERATIONS,
@@ -94,6 +104,21 @@ export function isMutationOperation(
   value: unknown,
 ): value is MutationOperation {
   return typeof value === "string" && MUTATION_OPERATION_SET.has(value);
+}
+
+export function assertKnownMutationArguments(
+  operation: MutationOperation,
+  args: Record<string, any>,
+): void {
+  const allowedKeys = STRICT_ARGUMENT_KEYS[operation];
+  if (!allowedKeys) return;
+  const unknownKeys = Object.keys(args).filter(
+    (key) => !allowedKeys.includes(key),
+  );
+  if (unknownKeys.length === 0) return;
+  throw new Error(
+    `Unexpected argument(s) for ${operation}: ${unknownKeys.join(", ")}. Allowed arguments: ${allowedKeys.join(", ")}`,
+  );
 }
 
 export function isLegacyDirectMutationTool(value: unknown): boolean {

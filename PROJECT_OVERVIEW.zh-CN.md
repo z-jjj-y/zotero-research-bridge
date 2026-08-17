@@ -2,7 +2,7 @@
 
 ## 1. 项目定位
 
-Zotero Research Bridge 是一套开源、本地优先的 Zotero 科研文献自动化基础设施。它让 Codex 等支持 MCP 的 AI 客户端能够读取和管理本地 Zotero 文献库，而不需要模拟鼠标键盘，也不需要直接修改 `zotero.sqlite`。
+Zotero Research Bridge 是一套开源、本地优先的 Zotero 科研文献自动化基础设施。普通用户安装 Zotero 插件与配套 Codex Plugin、启用推荐权限后，就能直接通过对话读取和管理本地 Zotero 文献库，不需要理解 MCP、复制 Token、模拟鼠标键盘或直接修改 `zotero.sqlite`。
 
 它把以下环节连接为一条可重复、可审计的流程：
 
@@ -14,6 +14,22 @@ Zotero Research Bridge 是一套开源、本地优先的 Zotero 科研文献自�
 6. 在必要时安全地修改、移入回收站或恢复条目。
 
 项目主要服务于机器学习、深度学习、动态图、时序知识图谱和链路预测等科研场景，但底层能力并不局限于这些领域。
+
+### 1.1 普通用户首次使用
+
+1. 安装 GitHub Release 中的 Zotero XPI；
+2. 安装配套的 Zotero Research Bridge Codex Plugin；
+3. 在 Zotero 的“AI 文献助手”设置页点击“启用推荐工作流”；
+4. 保持 Zotero 运行，在新的 Codex 对话中直接提出任务。
+
+当前可直接从 GitHub 安装 Codex Plugin：
+
+```bash
+codex plugin marketplace add z-jjj-y/zotero-research-bridge
+codex plugin add zotero-research-bridge@zrb-marketplace
+```
+
+例如：“整理我的 Zotero 文献并给出分类建议”或“分析这篇论文并把笔记保存回原条目”。正常流程不需要编辑 MCP 配置或复制 Token。根据 Codex 的本地权限设置，首次读取 Zotero Profile 时可能出现一次文件访问授权。
 
 ## 2. 代码来源与组成
 
@@ -37,14 +53,17 @@ Zotero Research Bridge 是一套开源、本地优先的 Zotero 科研文献自�
 - 审计日志和敏感信息脱敏；
 - 正式 Zotero 运行时兼容修复；
 - 隔离集成测试；
-- 完整的科研文献处理 Skill。
+- 完整的科研文献处理 Skill；
+- 可安装的 Codex Plugin 与本地凭据自动发现。
 
 仓库是一个 Git 仓库，不包含 Git submodule：
 
 ```text
 zotero-research-bridge/
+├── .agents/plugins/            可从 GitHub 安装的 Codex Marketplace
+├── plugins/zotero-research-bridge/
+│   └── skills/                 Codex Plugin、对话式工作流与本地客户端
 ├── zotero-mcp-plugin/          上游插件基础 + 本项目安全写入改造
-├── zotero-research-workflow/   本项目的 Codex 科研工作流 Skill
 ├── .github/workflows/          CI 与公开 Release 流程
 ├── README.md                   英文项目入口
 ├── PROJECT_OVERVIEW.zh-CN.md   中文项目说明
@@ -57,17 +76,18 @@ zotero-research-bridge/
 
 ```mermaid
 flowchart LR
-    A["Codex / MCP 客户端"] -->|"Bearer Token + MCP"| B["Zotero Research Bridge 插件"]
+    A["用户与 Codex 对话"] --> D["Zotero Research Bridge Codex Plugin"]
+    D --> E["科研工作流 Skill"]
+    E -->|"自动发现本地凭据"| B["Zotero Research Bridge 插件"]
     B -->|"Zotero API"| C["本地 Zotero 文献库"]
-    A --> D["zotero-research-workflow Skill"]
-    D --> E["论文阅读与分析 Skills"]
-    E -->|"结构化 HTML 笔记"| B
+    E --> F["内置或可选论文分析方法"]
+    F -->|"结构化 HTML 笔记"| B
 ```
 
 两个核心组件的职责不同：
 
 - `zotero-mcp-plugin/` 负责底层读取、写入和安全边界；
-- `zotero-research-workflow/` 负责把底层能力组织成稳定的科研流程。
+- `plugins/zotero-research-bridge/` 负责把底层能力组织成普通用户可直接对话使用的 Codex Plugin。
 
 插件解决“能不能安全操作 Zotero”，工作流解决“应该按什么顺序处理文献”。
 
@@ -107,17 +127,46 @@ flowchart LR
 3. 如果条目不存在，创建父条目并导入 PDF；
 4. 按研究主题加入一至三个叶子文件夹，同时保留研究项目和阅读状态；
 5. 使用论文分析 Skill 阅读实际 PDF，而不是只分析摘要；
-6. 生成包含研究问题、方法、公式、实验、结果、贡献、局限和复现条件的笔记；
-7. 将笔记作为子笔记写回父条目；
-8. 回读 Zotero 条目并检查审计日志。
+6. 检查论文中的代码链接和代码可用性说明。官方代码属于可选证据，没有代码时仍继续分析公式、算法、伪代码、架构和实验；
+7. 从本次阅读中生成必需的机器可读 `map.json`；
+8. 只有用户明确要求时，才额外生成一份 `analysis.html`，风格在 `academic` 与 `storytelling` 中二选一；
+9. 若生成了 `analysis.html`，通过安全写入网关把它作为链接文件挂到原 Zotero 条目下，不复制进 Zotero storage；
+10. 回读 Zotero 条目、外部文件和审计日志，确认 Zotero key 绑定与输出完整性。
 
-系统生成的分析笔记带有版本标记，例如：
+### 5.1 默认输出规则
+
+正式文献分析采用 **map-first** 规则：
+
+- `map.json` 是必选项，每次正式分析都生成或原位更新；
+- `analysis.html` 是可选项，默认不生成；
+- 可读报告只支持学术深度版和故事化版，不生成精炼版；
+- 正式目录最多包含 `map.json` 与 `analysis.html` 两个文件；
+- 同时生成多种风格只用于比较，放入单独的 `_style-preview`，不进入正式论文目录。
+
+目录以 Zotero 父条目的 `itemKey` 作为稳定身份，并附带人类可读简称：
 
 ```text
-ZRB_ANALYSIS_V1:structured-analysis
+<analysis-root>/<itemKey> - <Short Name>/map.json
+<analysis-root>/<itemKey> - <Short Name>/analysis.html   # 明确要求时才存在
 ```
 
-更新笔记前会查找相同标记。只有同类系统笔记才会被更新，人工笔记不会被覆盖。
+优先使用论文正式简称；没有简称时生成不超过 50 个字符的简短英文主题名。简称只用于显示，真正的绑定信息保存在 `map.json` 的 `source.itemKey`、`source.attachmentKey`、`source.attachmentSha256` 和 `source.title` 中。因此论文标题或文件夹显示名变化时，系统仍可依据 Zotero key 找到同一份分析。
+
+### 5.2 Map 的作用
+
+`map.json` 使用 `ZRB_MATCH_PROFILE_V1`。它保存问题卡、方法/模块卡、证据定位、适用假设、验证效果、迁移边界和论文内部的问题—方法关系。它只记录论文内部已经提出或有证据支持的关系；跨论文匹配和创新点组合留给后续综合阶段。生成后必须先通过 schema、证据来源和引用完整性校验，再替换现有文件。
+
+### 5.3 可选阅读报告
+
+`analysis.html` 只解释和评价论文本身，不包含面向特定用户的迁移建议、跨论文匹配或创新点构思。学术深度版适合系统阅读；故事化版适合连续理解。正式目录中二者只能选择一种，并统一命名为 `analysis.html`。
+
+当 `analysis.html` 存在时，插件使用 `link_analysis_file` 创建一个 Zotero 链接文件附件，显示名为 `Paper Analysis - <Short Name>`。附件只保存对外部绝对路径的引用；相同路径再次执行会返回现有 attachment key 并跳过重复创建。外部 HTML 仍是唯一报告本体，Zotero 只提供一键打开入口。
+
+HTML 本身不使用 LaTeX 作为浏览器公式格式。生成过程中可以用 LaTeX 作为中间表达，但保存前必须转换为静态 MathML 或预渲染的 KaTeX HTML+MathML。最终文件关闭 JavaScript、断开网络后仍应正确显示公式，不依赖 MathJax、KaTeX 自动渲染脚本、Mermaid、CDN 或外部样式。
+
+### 5.4 没有论文代码时
+
+代码状态分为 `official`、`announced`、`unofficial` 和 `none`。只有官方仓库可以用于核对作者实现。待发布代码只记录状态；第三方实现必须明确标为非官方，不能当作作者实现证据；完全没有代码时，不生成虚构源码片段，也不终止分析，而是加强对公式、算法、伪代码、超参数、计算环境和缺失复现信息的说明。Map 中无法从论文确认的实现细节写为 `unknown` 并进入不确定性列表。
 
 ## 6. 安全设计
 
@@ -130,6 +179,8 @@ ZRB_ANALYSIS_V1:structured-analysis
 - 不执行任意 JavaScript，不直接写入 `zotero.sqlite`，不直接改动 Zotero 存储目录。
 
 Token 属于敏感信息，不应写入仓库、日志、文档、Issue 或命令输出。
+
+配套 Codex Plugin 只读地从当前用户的 Zotero Profile 发现 Token，不复制、不输出也不修改 Profile。环境变量仅作为高级覆盖方式。
 
 ## 7. 开发目录、安装目录和运行副本
 
@@ -149,21 +200,21 @@ Token 属于敏感信息，不应写入仓库、日志、文档、Issue 或命�
 
 不要直接在 Zotero 的正式安装目录中长期修改代码，否则运行版本与 Git 历史会失去对应关系。
 
-### 7.3 Codex Skill 安装副本
+### 7.3 Codex Plugin 与工作流
 
-仓库内的 `zotero-research-workflow/` 是可维护源文件。Codex 通常从下面的位置加载安装副本：
-
-```text
-$CODEX_HOME/skills/zotero-research-workflow
-```
-
-如果没有设置 `CODEX_HOME`，常见位置是：
+仓库是一个可从 GitHub 添加的 Codex Marketplace，清单位于：
 
 ```text
-$HOME/.codex/skills/zotero-research-workflow
+.agents/plugins/marketplace.json
 ```
 
-修改工作流后，需要同步安装副本并重新验证。
+Codex Plugin 和工作流源文件位于：
+
+```text
+plugins/zotero-research-bridge
+```
+
+安装后的 Codex Plugin 会携带该 Skill 和本地 Bridge 客户端。修改后应重新验证并在新对话中测试，不再长期维护一个手工复制的 Skill 副本。
 
 ### 7.4 审计日志
 
@@ -197,7 +248,9 @@ ZOTERO_PLUGIN_ZOTERO_BIN_PATH=/Applications/Zotero.app/Contents/MacOS/zotero \
 cd /path/to/zotero-research-bridge
 uv run --with pyyaml python \
   ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
-  zotero-research-workflow
+  plugins/zotero-research-bridge/skills/zotero-research-workflow
+uv run --with pyyaml python ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/zotero-research-bridge
+python3 -m unittest discover -s tests
 ```
 
 构建产物位于：

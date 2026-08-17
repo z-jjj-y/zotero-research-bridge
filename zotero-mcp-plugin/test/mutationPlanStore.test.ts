@@ -4,6 +4,7 @@ import {
   redactMutationDetails,
 } from "../src/modules/mutationAuditLog";
 import {
+  assertKnownMutationArguments,
   isLegacyDirectMutationTool,
   isMutationOperation,
   MUTATION_OPERATIONS,
@@ -88,6 +89,7 @@ describe("mutation safety foundation", function () {
     it("contains recoverable trash but excludes permanent collection deletion", function () {
       expect(MUTATION_OPERATIONS).to.include("trash_item");
       expect(MUTATION_OPERATIONS).to.include("restore_from_trash");
+      expect(MUTATION_OPERATIONS).to.include("link_analysis_file");
       expect(MUTATION_OPERATIONS).not.to.include("delete_collection" as any);
       expect(MUTATION_OPERATIONS).not.to.include("delete_tag" as any);
     });
@@ -97,6 +99,43 @@ describe("mutation safety foundation", function () {
       expect(isLegacyDirectMutationTool("update_item")).to.equal(true);
       expect(isLegacyDirectMutationTool("delete_collection")).to.equal(true);
       expect(isLegacyDirectMutationTool("search_library")).to.equal(false);
+    });
+
+    it("rejects unknown move_collection arguments", function () {
+      expect(() =>
+        assertKnownMutationArguments("move_collection", {
+          collectionKey: "ABCDEFGH",
+          newParentCollectionKey: "HGFEDCBA",
+        }),
+      ).to.throw(
+        "Unexpected argument(s) for move_collection: newParentCollectionKey",
+      );
+      expect(() =>
+        assertKnownMutationArguments("move_collection", {
+          collectionKey: "ABCDEFGH",
+          newParentKey: "HGFEDCBA",
+        }),
+      ).not.to.throw();
+    });
+
+    it("keeps external analysis linking arguments strict", function () {
+      expect(() =>
+        assertKnownMutationArguments("link_analysis_file", {
+          sourcePath: "/tmp/analysis.html",
+          parentItemKey: "ABCDEFGH",
+          title: "Paper Analysis - Example",
+          copyIntoStorage: true,
+        }),
+      ).to.throw(
+        "Unexpected argument(s) for link_analysis_file: copyIntoStorage",
+      );
+      expect(() =>
+        assertKnownMutationArguments("link_analysis_file", {
+          sourcePath: "/tmp/analysis.html",
+          parentItemKey: "ABCDEFGH",
+          title: "Paper Analysis - Example",
+        }),
+      ).not.to.throw();
     });
   });
 
@@ -140,6 +179,16 @@ describe("mutation safety foundation", function () {
       });
     });
 
+    it("does not persist external analysis source directories", function () {
+      const redacted = redactMutationArguments("link_analysis_file", {
+        sourcePath: "/Users/researcher/private-project/analysis.html",
+      });
+      expect(redacted.sourcePath).to.deep.equal({
+        redacted: true,
+        filename: "analysis.html",
+      });
+    });
+
     it("redacts local source directories from mutation results", function () {
       const redacted = redactMutationDetails({
         decision: "create",
@@ -150,6 +199,31 @@ describe("mutation safety foundation", function () {
         filename: "paper.pdf",
       });
       expect(JSON.stringify(redacted)).not.to.include("private-project");
+    });
+
+    it("redacts metadata values from audit details and tag arguments", function () {
+      const details = redactMutationDetails({
+        summary: "Create Private Paper in Secret Collection",
+        title: "Private Paper",
+        parentTitle: "Private Parent Paper",
+        collectionName: "Secret Collection",
+        tags: ["confidential-topic"],
+        itemKey: "ABCDEFGH",
+      });
+      const tagArguments = redactMutationArguments("add_tags", {
+        itemKey: "ABCDEFGH",
+        tags: ["confidential-topic"],
+      });
+      const serialized = JSON.stringify({ details, tagArguments });
+
+      expect(details.itemKey).to.equal("ABCDEFGH");
+      expect(details.summary).to.deep.equal({ redacted: true, length: 41 });
+      expect(details.tags).to.deep.equal({ redacted: true, count: 1 });
+      expect(tagArguments.tags).to.deep.equal({ redacted: true, count: 1 });
+      expect(serialized).not.to.include("Private Paper");
+      expect(serialized).not.to.include("Private Parent Paper");
+      expect(serialized).not.to.include("Secret Collection");
+      expect(serialized).not.to.include("confidential-topic");
     });
   });
 });

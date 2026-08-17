@@ -1,6 +1,14 @@
 pref-help = { $name } Build { $version } { $time }
 
-pref-server-title = MCP Server
+pref-quick-start-title = AI Research Workflow
+pref-quick-start-description = After installing the companion Codex Plugin, Codex discovers the local Zotero connection automatically. No token copying or manual MCP setup is required. Enable the recommended permissions to classify papers, analyze PDFs, and save notes through conversation.
+pref-quick-start-ready = ✓ Ready to classify papers, analyze PDFs, and write notes
+pref-quick-start-action-needed = Enable the recommended workflow permissions to continue
+pref-enable-recommended-workflow-button =
+    .label = Enable Recommended Workflow
+pref-quick-start-hint = Recommended mode enables notes, tags, collections, item metadata, and attachment import. Trash and destructive bulk operations remain disabled.
+
+pref-server-title = Advanced: Local Bridge
 pref-server-enable =
     .label = Enable Server
 pref-server-port = Port
@@ -18,7 +26,7 @@ pref-auth-copy-token-button =
     .label = Copy
 pref-auth-regen-token-button =
     .label = Regenerate
-pref-auth-token-hint = Paste this into your AI client's MCP config as Authorization: Bearer <token>. Regenerating invalidates existing client configs.
+pref-auth-token-hint = The Codex Plugin discovers this token from the local Zotero profile. Copy it only for manual third-party client setup. Regenerating invalidates existing client configurations.
 
 pref-write-scopes-title = Write Scopes
 pref-write-scopes-hint = Each scope must be enabled before its tools are exposed. Destructive scopes are highlighted.
@@ -61,8 +69,8 @@ pref-enable-compression-label =
 pref-include-metadata-label = 
     .label = Include item metadata in responses
 
-pref-client-config-title = Client Configuration Generator
-pref-client-config-description = Generate MCP server configuration files for popular AI clients to easily connect to the Zotero MCP server.
+pref-client-config-title = Advanced: Manual Client Setup
+pref-client-config-description = Generate MCP configuration only when not using the companion Codex Plugin or when connecting another AI client.
 pref-client-type-label = Client Type:
 pref-server-name-label = Server Name:
 pref-generate-config-button =
@@ -181,7 +189,7 @@ pref-semantic-index-confirm-clear = This will clear all index data (content cach
 pref-semantic-index-cleared = Index cleared
 
 first-install-title = Welcome to Zotero Research Bridge
-first-install-prompt = Thank you for installing Zotero Research Bridge! To get started, you need to generate configuration files for your AI clients. Would you like to open the settings page now to generate configurations?
+first-install-prompt = Thank you for installing Zotero Research Bridge. Enable the recommended workflow permissions in Settings. After installing the companion Codex Plugin, you can manage and analyze papers through conversation. Open Settings now?
 first-install-open-prefs = Open Settings
 first-install-later = Configure Later
 

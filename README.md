@@ -6,7 +6,7 @@
 
 An open-source, local-first research-management bridge for Zotero. It exposes Zotero search, PDF access, structured CRUD, and recoverable library-management operations to MCP clients while keeping all traffic on the local machine.
 
-The repository also includes a Codex workflow Skill that connects PDF ingestion, deduplication, multi-axis classification, paper analysis, and child-note writeback into one guarded workflow.
+The repository is also a Codex Plugin. Its bundled workflow Skill connects PDF ingestion, deduplication, multi-axis classification, paper analysis, and external problem–method map generation into one guarded workflow. The required output is `map.json`; a deep HTML reading report is generated only when explicitly requested. The bundled client discovers the local Zotero credential read-only, so normal Codex use does not require copying tokens or editing MCP configuration.
 
 中文项目说明：[PROJECT_OVERVIEW.zh-CN.md](PROJECT_OVERVIEW.zh-CN.md)
 
@@ -17,8 +17,9 @@ Zotero already manages papers well, and paper-analysis agents already read PDFs 
 - retrieve a paper and its PDF from a local Zotero library;
 - add papers and attachments without desktop automation;
 - classify one item into multiple research collections without duplicating its PDF;
-- analyze the actual PDF with a paper-analysis workflow;
-- save the result as a child note under the correct Zotero item;
+- deeply analyze the actual PDF with an evidence-grounded paper-analysis workflow, whether or not official source code exists;
+- always create or update an external validated `map.json` for later cross-paper matching and innovation analysis;
+- optionally create one external `analysis.html` in academic or storytelling style, only after an explicit request;
 - update, trash, and restore items through reviewable, recoverable operations.
 
 ## Architecture
@@ -32,13 +33,26 @@ Zotero Research Bridge add-on
         ▼
 Local Zotero library and attachments
 
-Codex workflow Skill ──► paper-analysis Skills ──► child-note writeback
+Codex workflow Skill ──► PDF / optional code analysis ──► required map.json
+                                                   └──► optional analysis.html
 ```
+
+## Paper-analysis output contract
+
+Formal paper analysis is map-first. Each paper uses an external directory identified by its Zotero parent item key:
+
+```text
+<analysis-root>/<itemKey> - <Short Name>/map.json
+<analysis-root>/<itemKey> - <Short Name>/analysis.html   # explicit opt-in only
+```
+
+`map.json` is always produced. `analysis.html` defaults to absent and supports only `academic` or `storytelling`; multi-style comparisons belong under `_style-preview`, not in the production directory. Browser formulas in the optional report are stored as static MathML or pre-rendered KaTeX HTML+MathML, so the final file does not depend on runtime JavaScript or a CDN. Missing official code never blocks analysis: the workflow falls back to the paper's equations, algorithms, pseudocode, reported settings, and explicit reproducibility gaps.
 
 ## Repository layout
 
 - `zotero-mcp-plugin/` — Zotero add-on source, unit tests, and isolated integration tests.
-- `zotero-research-workflow/` — Codex Skill, bridge client, API reference, and classification taxonomy.
+- `.agents/plugins/marketplace.json` — Git-installable Codex marketplace entry.
+- `plugins/zotero-research-bridge/` — Codex Plugin manifest and bundled workflow Skill.
 - `PROJECT_OVERVIEW.zh-CN.md` — detailed Chinese architecture and maintenance guide.
 - `CONTRIBUTING.md` — contribution and verification workflow.
 - `SECURITY.md` — security policy and reporting guidance.
@@ -52,6 +66,7 @@ Codex workflow Skill ──► paper-analysis Skills ──► child-note writeb
 - Every mutation uses a time-limited, one-use `plan_mutation` → `apply_mutation` protocol.
 - Mutation arguments are retained server-side, so they cannot be changed between review and apply.
 - Audit logs redact note bodies, metadata values, and local source directories.
+- Optional reader reports remain as portable external HTML files; Zotero stores only a linked-file entry point, never a second report copy.
 - Trash and restore are supported; permanent item deletion, trash emptying, permanent collection deletion, and library-wide tag deletion are intentionally unavailable.
 - The bridge does not execute arbitrary JavaScript and never writes directly to `zotero.sqlite`.
 
@@ -65,14 +80,26 @@ See [SECURITY.md](SECURITY.md) before enabling write scopes.
 
 The current maintainer tests on macOS. Other platforms should work where Zotero and the local MCP transport are available, but are not yet part of the verified matrix.
 
-## Install from a release
+## Everyday quick start
 
 1. Download `zotero-research-bridge.xpi` from the latest GitHub Release.
 2. In Zotero, open **Tools → Add-ons**.
 3. Choose **Install Add-on From File…** and select the XPI.
-4. Open the Zotero Research Bridge preferences.
-5. Enable the local MCP server and copy the generated token into your MCP client configuration.
-6. Enable only the write scopes you actually need.
+4. Install the companion Codex Plugin:
+
+   ```bash
+   codex plugin marketplace add z-jjj-y/zotero-research-bridge
+   codex plugin add zotero-research-bridge@zrb-marketplace
+   ```
+
+5. In Zotero, open **Settings → Research Assistant** and click **Enable Recommended Workflow**.
+6. Start a new Codex conversation and ask it to organize, analyze, or annotate your Zotero papers.
+
+Formal paper analysis is map-first: each paper receives a required external `map.json`. A readable `analysis.html` is generated only when requested, validated for offline formulas and embedded resources, and linked back under the Zotero parent item for one-click opening.
+
+The Codex Plugin is installed at user scope and loaded from Codex's plugin cache. After starting a new conversation it works from any workspace, an empty temporary directory, or a direct Codex chat; the repository does not need to be the current directory. Do not install a second standalone copy of `zotero-research-workflow`, because duplicate Skills can shadow the Plugin version.
+
+The normal Codex workflow does not require manual MCP setup or token copying. The repository can be installed directly as a Codex marketplace while public catalog submission is pending. Advanced users can still configure the MCP endpoint manually.
 
 Automatic updates are intentionally disabled in v0.1.0. Upgrade by installing a reviewed XPI from this repository. See [AUTO_UPDATE_GUIDE.md](AUTO_UPDATE_GUIDE.md).
 
@@ -101,7 +128,14 @@ Validate the workflow Skill with:
 ```bash
 uv run --with pyyaml python \
   ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
-  zotero-research-workflow
+  plugins/zotero-research-bridge/skills/zotero-research-workflow
+```
+
+Validate the Codex Plugin with:
+
+```bash
+uv run --with pyyaml python ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/zotero-research-bridge
+python3 -m unittest discover -s tests
 ```
 
 `npm run build` creates `.scaffold/build/zotero-research-bridge.xpi`.
@@ -114,7 +148,7 @@ The production policy exposes the MCP endpoint at:
 http://127.0.0.1:23121/mcp
 ```
 
-The token must be supplied as `Authorization: Bearer <token>`. Never commit the token to a repository or paste it into issue reports.
+The token must be supplied as `Authorization: Bearer <token>`. The bundled Codex workflow discovers it read-only from the local Zotero profile. Manual clients may use `ZOTERO_RESEARCH_BRIDGE_TOKEN`. Never commit the token to a repository or paste it into issue reports.
 
 ## Upstream and license
 

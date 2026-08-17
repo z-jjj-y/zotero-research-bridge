@@ -34,6 +34,10 @@ export type WriteScope =
   | "bulk"
   | "import";
 
+export const RECOMMENDED_WORKFLOW_SCOPES: readonly WriteScope[] = Object.freeze(
+  ["notes", "tags", "collections", "metadata", "import"],
+);
+
 const SCOPE_PREFS: Record<WriteScope, string> = {
   notes: MCP_WRITE_NOTES,
   tags: MCP_WRITE_TAGS,
@@ -212,6 +216,24 @@ class ServerPreferences {
     return (Object.keys(SCOPE_PREFS) as WriteScope[]).some((s) =>
       this.isScopeEnabled(s),
     );
+  }
+
+  public hasRecommendedWorkflowScopes(): boolean {
+    return (
+      RECOMMENDED_WORKFLOW_SCOPES.every((scope) =>
+        this.isScopeEnabled(scope),
+      ) &&
+      !this.isScopeEnabled("delete") &&
+      !this.isScopeEnabled("bulk")
+    );
+  }
+
+  public enableRecommendedWorkflowScopes(): void {
+    for (const scope of RECOMMENDED_WORKFLOW_SCOPES) {
+      Zotero.Prefs.set(SCOPE_PREFS[scope], true, true);
+    }
+    Zotero.Prefs.set(SCOPE_PREFS.delete, false, true);
+    Zotero.Prefs.set(SCOPE_PREFS.bulk, false, true);
   }
 
   public addObserver(observer: PreferenceObserver): void {

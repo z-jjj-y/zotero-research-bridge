@@ -7,9 +7,10 @@ Zotero Research Bridge is an open-source, local-first integration between Zotero
 ## Components
 
 - `zotero-mcp-plugin/` — Zotero add-on, MCP server, safe CRUD implementation, and tests.
-- `zotero-research-workflow/` — Codex Skill for ingestion, deduplication, classification, analysis, and child-note writeback.
+- `.agents/plugins/marketplace.json` — repository marketplace entry for installing the Codex Plugin.
+- `plugins/zotero-research-bridge/` — Codex Plugin and bundled Skill for ingestion, deduplication, classification, analysis, and child-note writeback.
 
-Read `zotero-mcp-plugin/CLAUDE.md` before modifying add-on code and `zotero-research-workflow/SKILL.md` before modifying the workflow.
+Read `zotero-mcp-plugin/CLAUDE.md` before modifying add-on code and `plugins/zotero-research-bridge/skills/zotero-research-workflow/SKILL.md` before modifying the workflow.
 
 ## Safety rules
 

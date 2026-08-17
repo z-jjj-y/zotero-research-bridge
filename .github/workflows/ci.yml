@@ -32,6 +32,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate conversational workflow packaging
+        run: |
+          python3 -m json.tool ../.agents/plugins/marketplace.json >/dev/null
+          python3 -m json.tool ../plugins/zotero-research-bridge/.codex-plugin/plugin.json >/dev/null
+          python3 -m unittest discover -s ../tests
+
       - name: Audit production dependencies
         run: npm audit --omit=dev
 

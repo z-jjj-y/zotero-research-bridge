@@ -1,6 +1,14 @@
 pref-help = { $name } Build { $version } { $time }
 
-pref-server-title = MCP 服务器
+pref-quick-start-title = AI 文献工作流
+pref-quick-start-description = 安装配套 Codex Plugin 后，Codex 会自动发现本机 Zotero，无需复制 Token 或手动配置 MCP。启用推荐权限后即可直接通过对话分类文献、分析 PDF 并保存笔记。
+pref-quick-start-ready = ✓ 已具备文献分类、分析和笔记写回所需权限
+pref-quick-start-action-needed = 需要启用推荐工作流权限
+pref-enable-recommended-workflow-button =
+    .label = 启用推荐工作流
+pref-quick-start-hint = 推荐模式会启用笔记、标签、集合、条目元数据和附件导入；回收站与批量破坏性操作仍保持关闭。
+
+pref-server-title = 高级：本地桥接服务
 pref-server-enable =
     .label = 启用服务器
 pref-server-port = 端口
@@ -18,7 +26,7 @@ pref-auth-copy-token-button =
     .label = 复制
 pref-auth-regen-token-button =
     .label = 重新生成
-pref-auth-token-hint = 将此 Token 粘贴到 AI 客户端 MCP 配置的 Authorization: Bearer <token>。重新生成会使旧的客户端配置失效。
+pref-auth-token-hint = Codex Plugin 会从本机 Zotero 配置中自动发现此 Token。仅在手动配置其他客户端时才需要复制；重新生成会使旧配置失效。
 
 pref-write-scopes-title = 写入范围
 pref-write-scopes-hint = 各范围需单独启用，对应工具才会暴露。带颜色项为破坏性操作。
@@ -61,8 +69,8 @@ pref-enable-compression-label =
 pref-include-metadata-label = 
     .label = 在响应中包含项目元数据
 
-pref-client-config-title = 客户端配置生成器
-pref-client-config-description = 为主流 AI 客户端生成 MCP 服务器配置文件，方便快速连接到 Zotero MCP 服务器。
+pref-client-config-title = 高级：手动客户端配置
+pref-client-config-description = 仅在不使用配套 Codex Plugin，或需要连接其他 AI 客户端时生成 MCP 配置。
 pref-client-type-label = 客户端类型：
 pref-server-name-label = 服务器名称：
 pref-generate-config-button =
@@ -181,7 +189,7 @@ pref-semantic-index-confirm-clear = 这将清空所有索引数据（保留内�
 pref-semantic-index-cleared = 索引已清空
 
 first-install-title = 欢迎使用 Zotero Research Bridge
-first-install-prompt = 感谢安装 Zotero Research Bridge！为了开始使用，您需要为您的 AI 客户端生成配置文件。是否现在打开设置页面来生成配置？
+first-install-prompt = 感谢安装 Zotero Research Bridge！请在设置页启用推荐工作流权限。安装配套 Codex Plugin 后即可直接通过对话管理和分析文献。是否现在打开设置？
 first-install-open-prefs = 打开设置
 first-install-later = 稍后配置
 

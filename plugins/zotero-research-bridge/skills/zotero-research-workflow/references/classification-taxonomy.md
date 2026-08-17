@@ -1,6 +1,6 @@
-# Research classification taxonomy
+# Research topic classification taxonomy
 
-Assign one to three leaf topics. Preserve project and reading-status memberships.
+Assign one to three leaf topics from paper content. Preserve project and reading-status memberships.
 
 ## `01_研究主题`
 

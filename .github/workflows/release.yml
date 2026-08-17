@@ -29,6 +29,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate conversational workflow packaging
+        run: |
+          python3 -m json.tool ../.agents/plugins/marketplace.json >/dev/null
+          python3 -m json.tool ../plugins/zotero-research-bridge/.codex-plugin/plugin.json >/dev/null
+          python3 -m unittest discover -s ../tests
+
       - name: Audit production dependencies
         run: npm audit --omit=dev
 
@@ -41,23 +47,31 @@ jobs:
       - name: Build production XPI
         run: npm run build
 
+      - name: Package Codex Plugin
+        run: |
+          cd ../plugins/zotero-research-bridge
+          zip -r ../../zotero-mcp-plugin/.scaffold/build/zotero-research-bridge-codex-plugin.zip .codex-plugin skills LICENSE -x '*/__pycache__/*' '*.pyc'
+
       - name: Verify tag matches package version
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          CODEX_PLUGIN_VERSION=$(node -p "require('../plugins/zotero-research-bridge/.codex-plugin/plugin.json').version")
           test "$RELEASE_TAG" = "v$PACKAGE_VERSION"
+          test "$PACKAGE_VERSION" = "$CODEX_PLUGIN_VERSION"
 
       - name: Generate checksum
         run: |
           cd .scaffold/build
-          sha256sum zotero-research-bridge.xpi > SHA256SUMS.txt
+          sha256sum zotero-research-bridge.xpi zotero-research-bridge-codex-plugin.zip > SHA256SUMS.txt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             zotero-mcp-plugin/.scaffold/build/zotero-research-bridge.xpi
+            zotero-mcp-plugin/.scaffold/build/zotero-research-bridge-codex-plugin.zip
             zotero-mcp-plugin/.scaffold/build/SHA256SUMS.txt
           generate_release_notes: true
           draft: false
